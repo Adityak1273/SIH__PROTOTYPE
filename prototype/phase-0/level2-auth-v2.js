@@ -913,7 +913,9 @@
           <button class="settings-tab-btn" data-tab="health">Health Background</button>
           <button class="settings-tab-btn" data-tab="routine">Daily Routine</button>
           <button class="settings-tab-btn" data-tab="access">Accessibility</button>
+          <button class="settings-tab-btn" data-tab="language">Language</button>
           <button class="settings-tab-btn" data-tab="reports">Reports & Data</button>
+          <button class="settings-tab-btn" data-tab="privacy">Privacy</button>
           <button class="settings-tab-btn" data-tab="account">Account</button>
         </nav>
 
@@ -923,7 +925,7 @@
           <div class="l2v-field"><label>Preferred Name</label><input id="setPPref" value="${prof.preferred_name || ''}"></div>
           <div class="l2v-field"><label>Date of Birth</label><input id="setPDob" type="date" value="${prof.date_of_birth || ''}"></div>
           <div class="l2v-field"><label>City / State</label><input id="setPCity" value="${prof.city || ''}"></div>
-          <button class="l2v-btn primary" style="margin-top:14px" id="setSaveProfile">Save Profile</button>
+          <button class="l2v-btn primary save-btn" style="margin-top:14px" id="setSaveProfile">Save Profile</button>
         </div>
 
         <!-- Pane: Caregiver -->
@@ -931,7 +933,7 @@
           <div class="l2v-field"><label>Caregiver Name</label><input id="setPCgName" value="${prof.caregiver_info?.caregiver_name || ''}"></div>
           <div class="l2v-field"><label>Relationship</label><input id="setPCgRel" value="${prof.caregiver_info?.relationship || ''}"></div>
           <div class="l2v-field"><label>Emergency Contact Number</label><input id="setPEmerg" value="${prof.caregiver_info?.emergency_contact || ''}"></div>
-          <button class="l2v-btn primary" style="margin-top:14px" id="setSaveCg">Save Caregiver Info</button>
+          <button class="l2v-btn primary save-btn" style="margin-top:14px" id="setSaveCg">Save Caregiver Info</button>
         </div>
 
         <!-- Pane: Health -->
@@ -939,27 +941,52 @@
           <div class="l2v-field"><label>Known Conditions (user-provided)</label><input id="setPCond" value="${(prof.health_background?.known_conditions || []).join(', ')}"></div>
           <div class="l2v-field"><label>Current Medications</label><input id="setPMeds" value="${(prof.health_background?.medications || []).join(', ')}"></div>
           <div class="l2v-field"><label>Allergies</label><input id="setPAllergies" value="${(prof.health_background?.allergies || []).join(', ')}"></div>
-          <button class="l2v-btn primary" style="margin-top:14px" id="setSaveHealth">Save Health Background</button>
+          <button class="l2v-btn primary save-btn" style="margin-top:14px" id="setSaveHealth">Save Health Background</button>
         </div>
 
         <!-- Pane: Routine -->
         <div class="settings-pane" id="pane-routine">
           <div class="l2v-field"><label>Hobbies & Favorite Activities</label><input id="setPHobbies" value="${(prof.daily_life_background?.hobbies || []).join(', ')}"></div>
           <div class="l2v-field"><label>Daily Routine</label><textarea id="setPRoutine">${prof.daily_life_background?.daily_routine || ''}</textarea></div>
-          <button class="l2v-btn primary" style="margin-top:14px" id="setSaveRoutine">Save Routine</button>
+          <button class="l2v-btn primary save-btn" style="margin-top:14px" id="setSaveRoutine">Save Routine</button>
         </div>
 
         <!-- Pane: Accessibility -->
         <div class="settings-pane" id="pane-access">
-          <div class="l2v-field"><label>Text Size</label><select id="setPSize"><option value="standard">Standard</option><option value="large" selected>Large</option></select></div>
-          <div class="l2v-field"><label>Momo Speech Rate</label><select id="setPSpeed"><option value="1.0">Normal (1.0x)</option><option value="0.85">Slower (0.85x)</option></select></div>
-          <button class="l2v-btn primary" style="margin-top:14px" id="setSaveAccess">Save Accessibility</button>
+          <div class="l2v-field"><label>Text Size</label><select id="setPSize"><option value="standard">Standard</option><option value="large" ${prof.accessibility_settings?.font_size === 'large' ? 'selected' : ''}>Large</option></select></div>
+          <div class="l2v-field"><label>Voice Speed</label><select id="setPSpeed"><option value="1.0">Normal (1.0x)</option><option value="0.85" ${prof.accessibility_settings?.voice_speed === 0.85 ? 'selected' : ''}>Slower (0.85x)</option></select></div>
+          <button class="l2v-btn primary save-btn" style="margin-top:14px" id="setSaveAccess">Save Accessibility</button>
+        </div>
+
+        <!-- Pane: Language -->
+        <div class="settings-pane" id="pane-language">
+          <div class="l2v-field">
+            <label>Interface Language</label>
+            <select id="setPLang">
+              <option value="en-IN" ${prof.preferred_language === 'en-IN' ? 'selected' : ''}>English</option>
+              <option value="hi-IN" ${prof.preferred_language === 'hi-IN' ? 'selected' : ''}>Hindi</option>
+              <option value="bn-IN" ${prof.preferred_language === 'bn-IN' ? 'selected' : ''}>Bengali</option>
+              <option value="as-IN" ${prof.preferred_language === 'as-IN' ? 'selected' : ''}>Assamese</option>
+            </select>
+          </div>
+          <button class="l2v-btn primary save-btn" style="margin-top:14px" id="setSaveLang">Save Language</button>
         </div>
 
         <!-- Pane: Reports & External Data -->
         <div class="settings-pane" id="pane-reports">
           <p>Provide external medical documents or notes for structured extraction.</p>
           <button class="l2v-btn primary" id="setAddReportBtn">📄 Add Medical / Report Information</button>
+        </div>
+
+        <!-- Pane: Privacy -->
+        <div class="settings-pane" id="pane-privacy">
+          <div class="l2v-field">
+            <label><input type="checkbox" id="setPPrivacy1" ${prof.privacy_preferences?.consent_status !== false ? 'checked' : ''}> Allow processing of health context for personalization</label>
+          </div>
+          <div class="l2v-field">
+            <label><input type="checkbox" id="setPPrivacy2" ${prof.privacy_preferences?.caregiver_sharing !== false ? 'checked' : ''}> Share progress with authorized caregiver</label>
+          </div>
+          <button class="l2v-btn primary save-btn" style="margin-top:14px" id="setSavePrivacy">Save Privacy Preferences</button>
         </div>
 
         <!-- Pane: Account -->
@@ -983,9 +1010,14 @@
     document.getElementById('setAddReportBtn').onclick = openReportIntakeModal;
     document.getElementById('closeOverlay').onclick = () => { overlay.hidden = true; };
 
-    const savePartial = async (updates) => {
+    const savePartial = async (updates, btnId) => {
+      const btn = document.getElementById(btnId);
+      const originalText = btn.textContent;
+      btn.textContent = 'Saving...';
+      btn.disabled = true;
+
       Object.assign(currentProfile, updates);
-      if (authToken && !authToken.startsWith('offline-demo-token-')) {
+      if (authToken) {
         try {
           const resp = await fetch(`${API_BASE}/auth/profile`, {
             method: 'PUT',
@@ -996,18 +1028,31 @@
             const data = await resp.json();
             currentProfile = data.profile;
             localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
-            alert('Settings saved successfully.');
+            btn.textContent = 'Saved!';
+            btn.style.backgroundColor = '#235c3b';
+            
+            // If language changed, apply it
+            if (updates.preferred_language && window.setLocale) {
+               window.setLocale(updates.preferred_language);
+            }
           } else {
-            alert('Failed to save settings to server.');
+            btn.textContent = 'Failed';
+            btn.style.backgroundColor = '#b9552d';
           }
         } catch (e) {
-          localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
-          alert('Network offline. Settings saved locally.');
+          btn.textContent = 'Network Error';
+          btn.style.backgroundColor = '#b9552d';
         }
       } else {
         localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
-        alert('Settings saved locally in demo mode.');
+        btn.textContent = 'Saved Locally';
       }
+
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+        btn.style.backgroundColor = '';
+      }, 3000);
     };
 
     const gV = (id) => document.getElementById(id)?.value || '';
@@ -1017,7 +1062,7 @@
       preferred_name: gV('setPPref'),
       date_of_birth: gV('setPDob'),
       city: gV('setPCity')
-    });
+    }, 'setSaveProfile');
 
     document.getElementById('setSaveCg').onclick = () => savePartial({
       caregiver_info: {
@@ -1026,7 +1071,7 @@
         relationship: gV('setPCgRel'),
         emergency_contact: gV('setPEmerg')
       }
-    });
+    }, 'setSaveCg');
 
     document.getElementById('setSaveHealth').onclick = () => savePartial({
       health_background: {
@@ -1035,7 +1080,7 @@
         medications: gV('setPMeds').split(',').map(s=>s.trim()).filter(Boolean),
         allergies: gV('setPAllergies').split(',').map(s=>s.trim()).filter(Boolean)
       }
-    });
+    }, 'setSaveHealth');
 
     document.getElementById('setSaveRoutine').onclick = () => savePartial({
       daily_life_background: {
@@ -1043,15 +1088,27 @@
         hobbies: gV('setPHobbies').split(',').map(s=>s.trim()).filter(Boolean),
         daily_routine: gV('setPRoutine')
       }
-    });
+    }, 'setSaveRoutine');
 
     document.getElementById('setSaveAccess').onclick = () => savePartial({
       accessibility_settings: {
         ...(currentProfile.accessibility_settings || {}),
-        font_size: gV('setPSize') || 'large',
-        voice_speed: Number(gV('setPSpeed') || 1.0)
+        font_size: gV('setPSize'),
+        voice_speed: Number(gV('setPSpeed'))
       }
-    });
+    }, 'setSaveAccess');
+
+    document.getElementById('setSaveLang').onclick = () => savePartial({
+      preferred_language: gV('setPLang')
+    }, 'setSaveLang');
+
+    document.getElementById('setSavePrivacy').onclick = () => savePartial({
+      privacy_preferences: {
+        ...(currentProfile.privacy_preferences || {}),
+        consent_status: document.getElementById('setPPrivacy1').checked,
+        caregiver_sharing: document.getElementById('setPPrivacy2').checked
+      }
+    }, 'setSavePrivacy');
   }
 
   function openCaregiverSettings() {

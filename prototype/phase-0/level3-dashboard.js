@@ -1,1 +1,129 @@
-(()=>{'use strict';const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)],read=(k,f)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??f}catch(_){return f}},esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0,hist=()=>Array.isArray(window.state?.history)?window.state.history:read('ccner-history',[]),rem=()=>read('ccner-p1-reminders',[]),tasks=()=>read('ccner-p1-tasks',[]),prof=()=>read('ccner-p1-profile',{}),lang=()=>localStorage.getItem('ccner-p1-language')||prof().preferredLanguage||'en-IN';const T={'en-IN':{summary:'Today’s Summary',welcome:'Good to see you',sessions:'Sessions',accuracy:'Accuracy',response:'Avg. response',streak:'Streak',weekly:'Weekly performance',recent:'Recent activity',recommendation:'Next recommendation',alerts:'Caregiver alerts',tasks:'Today’s tasks',reminders:'Reminders',goal:'Weekly goal',how:'How am I doing?',games:'Games',momo:'Momo',progress:'Progress',settings:'Settings',music:'Music Memory',stories:'Family Stories',talk:'Talk to Momo',close:'Close',text:'Text Conversation',voice:'Voice Conversation',send:'Send',placeholder:'Type a message to Momo…'},'hi-IN':{summary:'आज का सारांश',welcome:'आपसे मिलकर खुशी हुई',sessions:'सेशन',accuracy:'सटीकता',response:'औसत समय',streak:'स्ट्रीक',weekly:'साप्ताहिक प्रगति',recent:'हाल की गतिविधि',recommendation:'अगला सुझाव',alerts:'केयरगिवर अलर्ट',tasks:'आज के कार्य',reminders:'रिमाइंडर',goal:'साप्ताहिक लक्ष्य',how:'मैं कैसा कर रहा हूँ?',games:'गेम्स',momo:'मोमो',progress:'प्रगति',settings:'सेटिंग्स',music:'म्यूज़िक मेमोरी',stories:'परिवार की यादें',talk:'मोमो से बात करें',close:'बंद करें',text:'टेक्स्ट बातचीत',voice:'वॉइस बातचीत',send:'भेजें',placeholder:'मोमो को संदेश लिखें…'},'bn-IN':{summary:'আজকের সারাংশ',welcome:'আপনাকে দেখে ভালো লাগছে',sessions:'সেশন',accuracy:'নির্ভুলতা',response:'গড় সময়',streak:'ধারাবাহিকতা',weekly:'সাপ্তাহিক অগ্রগতি',recent:'সাম্প্রতিক কার্যকলাপ',recommendation:'পরবর্তী পরামর্শ',alerts:'কেয়ারগিভার সতর্কতা',tasks:'আজকের কাজ',reminders:'রিমাইন্ডার',goal:'সাপ্তাহিক লক্ষ্য',how:'আমি কেমন করছি?',games:'গেম',momo:'মোমো',progress:'অগ্রগতি',settings:'সেটিংস',music:'মিউজিক মেমরি',stories:'পরিবারের স্মৃতি',talk:'মোমোর সাথে কথা বলুন',close:'বন্ধ',text:'টেক্সট কথোপকথন',voice:'ভয়েস কথোপকথন',send:'পাঠান',placeholder:'মোমোকে লিখুন…'},'as-IN':{summary:'আজিৰ সাৰাংশ',welcome:'আপোনাক দেখি ভাল লাগিল',sessions:'ছেচন',accuracy:'শুদ্ধতা',response:'গড় সময়',streak:'ধাৰাবাহিকতা',weekly:'সাপ্তাহিক অগ্ৰগতি',recent:'শেহতীয়া কাৰ্যকলাপ',recommendation:'পৰৱৰ্তী পৰামৰ্শ',alerts:'কেয়াৰগিভাৰ সতৰ্কতা',tasks:'আজিৰ কাম',reminders:'সোঁৱৰনী',goal:'সাপ্তাহিক লক্ষ্য',how:'মই কেনেকুৱা কৰি আছোঁ?',games:'গেম',momo:'মোমো',progress:'অগ্ৰগতি',settings:'ছেটিংছ',music:'মিউজিক মেমৰি',stories:'পৰিয়ালৰ স্মৃতি',talk:'মোমোৰ সৈতে কথা পাতক',close:'বন্ধ',text:'টেক্সট কথোপকথন',voice:'ভইচ কথোপকথন',send:'পঠিয়াওক',placeholder:'মোমোক লিখক…'}};const t=k=>(T[lang()]||T['en-IN'])[k]||T['en-IN'][k]||k;function S(){const h=hist(),w=h.filter(x=>Date.now()-new Date(x.date).getTime()<6048e5),m=h.filter(x=>Date.now()-new Date(x.date).getTime()<2592e6),last=h.at(-1),as=a=>Math.round(avg(a.map(x=>+x.accuracy||0))*100),sc=a=>Math.round(avg(a.map(x=>+x.score||0)));let st=0;for(let i=h.length-1;i>=0;i--){if(+h[i].score>=60)st++;else break}return{h,w,m,last,st,wa:as(w),ma:as(m),ws:sc(w),ms:sc(m)}}function hide(){['.companion-card','.section-label','.info-grid','.home-strip','.p3-panel','.p1-launcher'].forEach(s=>$$(`#homeView ${s}`).forEach(e=>e.hidden=true))}function render(){const home=$('#homeView');if(!home||$('#level3Dashboard'))return;hide();const s=S(),p=prof(),name=esc(p.name||'there'),rr=rem().slice().sort((a,b)=>String(a.time).localeCompare(String(b.time))).slice(0,3),tt=tasks().slice(0,3),goal=Math.min(5,s.w.length),last=s.last,rec=!last?'Start with one gentle five-game session when you feel ready.':+last.accuracy<.6?'Keep the next session calm, familiar and unhurried.':+last.accuracy>=.85?'You handled the last session well. A slightly richer challenge may be a good next step.':'Keep a balanced mix of memory, attention and pattern practice.',alert=last&&+last.accuracy<.6?'Latest training accuracy was below 60%. This is a training signal only — not a diagnosis.':'No immediate training alerts.',activity=s.h.slice(-4).reverse().map(x=>`<div class="l3-row"><span>🎮</span><div><b>${new Date(x.date).toLocaleDateString([], {day:'numeric',month:'short'})}</b><small>${Math.round(x.score||0)}% score · ${Math.round((x.accuracy||0)*100)}% accuracy</small></div></div>`).join('')||'<p class="l3-muted">Your completed sessions will appear here.</p>',rh=rr.map(x=>`<div class="l3-row"><span>⏰</span><div><b>${esc(x.title)}</b><small>${esc(x.time)} · ${x.repeat==='daily'?'Daily':'Once'}</small></div></div>`).join('')||'<p class="l3-muted">No reminders set.</p>',th=tt.map(x=>`<div class="l3-row"><span>${x.completed?'✅':'○'}</span><div><b>${esc(x.title)}</b><small>${x.completed?'Completed today':'Pending'}</small></div></div>`).join('')||'<p class="l3-muted">No tasks yet.</p>';home.insertAdjacentHTML('afterbegin',`<section id="level3Dashboard" class="l3-dashboard"><div class="l3-head"><div><p class="eyebrow">COGNITIVE CARE NER</p><h2>${t('summary')}</h2><p>${t('welcome')}, <b>${name}</b>. Here’s your training picture for today.</p></div><button id="l3Profile">👤 ${name}</button></div><section class="l3-momo-card"><div class="l3-momo-mini"><div class="l3-momo-rig">${$('#momoRig')?.innerHTML||'🐶'}</div></div><div><span class="l3-kicker">MOMO</span><h3>${t('talk')}</h3><p id="l3MomoPreview">I’m here whenever you want a little chat or help with your day.</p><button class="l3-primary" id="l3OpenMomo">${t('talk')}</button> <button class="l3-soft" id="l3How">${t('how')}</button></div></section><section class="l3-metrics"><article><span>${t('sessions')}</span><strong>${s.h.length}</strong><small>${s.w.length} this week</small></article><article><span>${t('accuracy')}</span><strong>${last?Math.round(last.accuracy*100):0}%</strong><small>${s.w.length>1?'Recent training':'First session'}</small></article><article><span>${t('response')}</span><strong>${last?(+last.avgTime).toFixed(1):'—'}s</strong><small>Latest session</small></article><article><span>${t('streak')}</span><strong>${s.st}</strong><small>Good sessions</small></article></section><section class="l3-section"><div class="l3-title"><div><span class="l3-kicker">PERFORMANCE</span><h3>${t('weekly')}</h3></div><button class="l3-link" data-l3="progress">View details →</button></div><div class="l3-bars">${[...Array(7)].map((_,i)=>{const d=new Date(Date.now()-(6-i)*864e5),x=s.h.filter(z=>new Date(z.date).toDateString()===d.toDateString()).at(-1),v=x?Math.max(8,Math.round((+x.score||0)*.82)):5;return`<div><i style="height:${v}px"></i><small>${d.toLocaleDateString([], {weekday:'narrow'})}</small></div>`}).join('')}</div><div class="l3-trend"><b>${s.ws||0}%</b><span>average score · ${s.wa||0}% accuracy</span></div></section><section class="l3-two"><div class="l3-section"><div class="l3-title"><div><span class="l3-kicker">ACTIVITY</span><h3>${t('recent')}</h3></div></div>${activity}</div><div class="l3-section"><div class="l3-title"><div><span class="l3-kicker">GUIDANCE</span><h3>${t('recommendation')}</h3></div></div><div class="l3-reco">🐾 <div><b>${esc(rec)}</b><small>Personalized from training performance. Not a medical assessment.</small></div></div></div></section><section class="l3-two"><div class="l3-section"><div class="l3-title"><div><span class="l3-kicker">SUPPORT</span><h3>${t('tasks')}</h3></div><button class="l3-link" data-l3="reminders">Open →</button></div>${th}</div><div class="l3-section"><div class="l3-title"><div><span class="l3-kicker">DAILY SUPPORT</span><h3>${t('reminders')}</h3></div><button class="l3-link" data-l3="reminders">Open →</button></div>${rh}</div></section><section class="l3-alert"><div><span class="l3-kicker">${t('alerts').toUpperCase()}</span><b>${esc(alert)}</b></div><span>●</span></section><section class="l3-goal"><div><span class="l3-kicker">${t('goal').toUpperCase()}</span><h3>${goal}/5 sessions this week</h3></div><div class="l3-track"><i style="width:${goal/5*100}%"></i></div><small>${goal>=5?'Weekly goal complete — lovely work.':`${5-goal} more session${5-goal===1?'':'s'} to reach your demo goal.`}</small></section><section class="l3-quick"><div class="l3-title"><div><span class="l3-kicker">QUICK ACTIONS</span><h3>Choose what you need</h3></div></div><div class="l3-qgrid"><button data-q="games">🎮<b>${t('games')}</b><small>Start today’s training</small></button><button data-q="momo">🐶<b>${t('momo')}</b><small>${t('talk')}</small></button><button data-q="reminders">⏰<b>${t('reminders')}</b><small>Daily support</small></button><button data-q="progress">📈<b>${t('progress')}</b><small>Weekly & monthly</small></button><button data-q="music">🎵<b>${t('music')}</b><small>Familiar sounds</small></button><button data-q="stories">❤️<b>${t('stories')}</b><small>Family memories</small></button></div></section></section>`);bind()}function panel(k){const b=$('.p1-launcher');if(k==='reminders')$('[data-p1="reminders"]',b)?.click();else if(k==='progress')$('[data-p1="report"]',b)?.click();else if(k==='settings')$$('.bottom-nav button').find(x=>x.dataset.nav==='settings')?.click()}function openMomo(prefill=''){if($('#l3MomoModal')){if(prefill)send(prefill);return}const src=$('#momoRig');document.body.insertAdjacentHTML('beforeend',`<section id="l3MomoModal" class="l3-modal"><div class="l3-modal-card"><button id="l3Close" class="l3-close">×</button><div class="l3-modal-head"><div class="l3-modal-avatar"><div class="l3-momo-rig">${src?.innerHTML||'🐶'}</div></div><div><span class="l3-kicker">MOMO</span><h2>${t('talk')}</h2><p id="l3ModalSpeech">Hello! I’m Momo. I’m listening.</p></div></div><div class="l3-mode"><button id="l3Voice" class="active">🎙️ ${t('voice')}</button><button id="l3Text">⌨️ ${t('text')}</button></div><div id="l3VoiceBox" class="l3-voice"><button id="l3VoiceBtn">🎙️</button><p>Tap the microphone and speak naturally.</p></div><div id="l3TextBox" class="l3-text" hidden><div id="l3Log"><div class="l3-chat momo">Momo: Hello! I’m here with you.</div></div><div class="l3-input"><input id="l3Input" placeholder="${t('placeholder')}"><button id="l3Send">${t('send')}</button></div></div><small class="l3-safety">Momo supports conversation and training. Momo does not diagnose medical conditions.</small></div></section>`);$('#l3Close').onclick=()=>{$('#l3MomoModal')?.remove();window.stopListening?.(false)};$('#l3Voice').onclick=()=>mode('voice');$('#l3Text').onclick=()=>mode('text');$('#l3VoiceBtn').onclick=()=>window.armVoice?.();$('#l3Send').onclick=()=>send();$('#l3Input').onkeydown=e=>{if(e.key==='Enter')send()};if(prefill){mode('text');send(prefill)}}function mode(m){const text=m==='text';$('#l3TextBox').hidden=!text;$('#l3VoiceBox').hidden=text;$('#l3Text').classList.toggle('active',text);$('#l3Voice').classList.toggle('active',!text);if(text){window.stopListening?.(false);if(window.state)window.state.voiceArmed=false}}function send(v){const i=$('#l3Input'),text=v||String(i?.value||'').trim();if(!text)return;if(i)i.value='';const log=$('#l3Log');if(log){const e=document.createElement('div');e.className='l3-chat user';e.textContent='You: '+text;log.appendChild(e)}window.respond?.(text);setTimeout(sync,100);setTimeout(sync,700);setTimeout(sync,1600)}let last='';function sync(){const x=$('#speechText')?.textContent||'';if(x&&x!==last){last=x;const m=$('#l3ModalSpeech');if(m)m.textContent=x;const log=$('#l3Log');if(log){const e=document.createElement('div');e.className='l3-chat momo';e.textContent='Momo: '+x;log.appendChild(e);log.scrollTop=log.scrollHeight}}}function bind(){$('#l3OpenMomo').onclick=()=>openMomo();$('#l3How').onclick=()=>openMomo('How am I doing?');$('#l3Profile').onclick=()=>panel('settings');$$('[data-l3]').forEach(b=>b.onclick=()=>panel(b.dataset.l3));$$('[data-q]').forEach(b=>b.onclick=()=>{const a=b.dataset.q;if(a==='games')window.startSession?.();else if(a==='momo')openMomo();else if(a==='reminders')panel('reminders');else if(a==='progress')panel('progress');else openMomo(a==='music'?'Can you help me with music memory?':'Can you help me with family memories?')})}function boot(){render();window.CCNERLevel3={refresh:()=>{$('#level3Dashboard')?.remove();render()},openMomo};setInterval(()=>$('#level3Dashboard')&&($('#level3Dashboard').remove(),render()),30000)}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot()})();
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  function renderPatientDashboard() {
+    const home = $('#homeView');
+    if (!home) return;
+
+    // Clean up existing dashboard if any
+    const existing = $('#level3Dashboard');
+    if (existing) existing.remove();
+
+    const user = window.CCNERAuth?.getUser?.() || { name: 'Aditya' };
+    const profile = window.CCNERAuth?.getProfile?.() || {};
+    const name = profile.preferred_name || user.name || 'Aditya';
+
+    const s = window.CCNERRuleEngine?.state() || {};
+    const history = s.history || [];
+    const lastSession = history[history.length - 1];
+
+    const tasks = s.tasks || [];
+    const pendingTasks = tasks.filter((t) => !t.completed).length;
+
+    // Build elderly-friendly simple dashboard
+    const html = `
+      <section id="level3Dashboard" class="patient-dashboard-simple">
+        <div class="dash-greeting">
+          <h2>Hello, ${name}</h2>
+          <p>Welcome to your daily cognitive training.</p>
+        </div>
+
+        <div class="dash-primary-card">
+          <div class="dash-mimo-rig">
+            ${$('#momoRig')?.innerHTML || '🐶'}
+          </div>
+          <div class="dash-primary-content">
+            <h3>Ready to play?</h3>
+            <p>Your daily exercises are waiting for you.</p>
+            <button class="action-button primary" id="dashStartGames">
+              <span aria-hidden="true">🎮</span> Play a Game
+            </button>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <button class="dash-card-btn" id="dashTalkMimo">
+            <span class="icon">🐶</span>
+            <strong>Talk to Mimo</strong>
+            <small>Ask questions or chat</small>
+          </button>
+          
+          <button class="dash-card-btn" id="dashReminders">
+            <span class="icon">⏰</span>
+            <strong>Reminders</strong>
+            <small>${pendingTasks ? pendingTasks + ' pending tasks' : 'View daily schedule'}</small>
+          </button>
+          
+          <button class="dash-card-btn" id="dashProgress">
+            <span class="icon">📈</span>
+            <strong>Progress</strong>
+            <small>${lastSession ? 'Last score: ' + Math.round(lastSession.score * 100) + '%' : 'Check your history'}</small>
+          </button>
+        </div>
+
+        <div class="dash-today-card">
+          <h3>Today's Focus</h3>
+          <p>We'll work on memory, attention, and identifying patterns. Take your time, there is no rush.</p>
+        </div>
+      </section>
+    `;
+
+    // Clear old homeView contents (except maybe the actual view structure)
+    // Actually we will just replace the innerHTML or prepend
+    home.innerHTML = '';
+    home.insertAdjacentHTML('afterbegin', html);
+
+    bindEvents();
+  }
+
+  function bindEvents() {
+    const btnGames = $('#dashStartGames');
+    const btnMimo = $('#dashTalkMimo');
+    const btnReminders = $('#dashReminders');
+    const btnProgress = $('#dashProgress');
+
+    if (btnGames) {
+      btnGames.onclick = () => {
+        if (window.startSession) window.startSession();
+        else if (window.showView) window.showView('#gameView');
+      };
+    }
+
+    if (btnMimo) {
+      btnMimo.onclick = () => {
+        if (window.CCNERUIUpgrade?.openTalk) window.CCNERUIUpgrade.openTalk();
+        else if (window.openTalk) window.openTalk();
+      };
+    }
+
+    if (btnReminders) {
+      btnReminders.onclick = () => {
+        if (window.openPanel) window.openPanel('reminders');
+      };
+    }
+
+    if (btnProgress) {
+      btnProgress.onclick = () => {
+        if (window.showView) window.showView('#resultsView');
+      };
+    }
+  }
+
+  function boot() {
+    const role = window.CCNERAuth?.getUser?.()?.role || window.CCNERRuleEngine?.state()?.role;
+    if (role === 'patient') {
+      renderPatientDashboard();
+    }
+  }
+
+  window.CCNERLevel3 = {
+    refresh: boot
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();window.addEventListener('ccner:language-change', () => window.CCNERLevel3?.refresh());
