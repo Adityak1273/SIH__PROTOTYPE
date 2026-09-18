@@ -545,6 +545,7 @@
       localStorage.setItem('ccner-token', authToken);
       currentUser = data.user;
       currentProfile = data.profile;
+      localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
 
       routeAfterAuth(data.redirect_to || (currentUser.role === 'caregiver' ? '/caregiver/dashboard' : '/patient/dashboard'));
     } catch (e) {
@@ -631,6 +632,9 @@
       profile_complete: true,
       profile_completion_pct: isCaregiver ? 100 : 85,
     };
+    authToken = `offline-demo-token-${identifier}`;
+    localStorage.setItem('ccner-token', authToken);
+    localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
     routeAfterAuth(isCaregiver ? '/caregiver/dashboard' : '/patient/dashboard');
   }
 
@@ -1149,6 +1153,17 @@
   }
 
   async function signOut() {
+    if (authToken && !authToken.startsWith('offline-demo-token-')) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Accept': 'application/json',
+          },
+        });
+      } catch (_) {}
+    }
     authToken = null;
     currentUser = null;
     currentProfile = null;
@@ -1161,28 +1176,67 @@
     showStep(0);
   }
 
-  function init() {
+  async function init() {
     // Check if valid token exists in storage
     if (authToken) {
-      // Restore user session
-      currentUser = {
-        name: 'Aditya Sharma',
-        username: 'patient.demo',
-        role: 'patient',
-      };
-      currentProfile = {
-        full_name: 'Aditya Sharma',
-        preferred_name: 'Aditya',
-        region: 'Assam',
-        preferred_language: 'en-IN',
-        profile_complete: true,
-        profile_completion_pct: 85,
-      };
-      routeAfterAuth('/patient/dashboard');
-    } else {
-      renderGate();
-      showStep(0);
+      if (authToken.startsWith('offline-demo-token-')) {
+        const cached = localStorage.getItem('ccner-auth-session');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.user) {
+              currentUser = parsed.user;
+              currentProfile = parsed.profile;
+              routeAfterAuth(currentUser.role === 'caregiver' ? '/caregiver/dashboard' : '/patient/dashboard');
+              return;
+            }
+          } catch (_) {}
+        }
+      }
+
+      try {
+        const resp = await fetch(`${API_BASE}/auth/user`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Accept': 'application/json',
+          },
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          currentUser = data.user;
+          currentProfile = data.profile;
+          localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
+          routeAfterAuth(currentUser.role === 'caregiver' ? '/caregiver/dashboard' : '/patient/dashboard');
+          return;
+        } else if (resp.status === 401 || resp.status === 403) {
+          // Token invalid or expired: purge invalid credentials
+          authToken = null;
+          currentUser = null;
+          currentProfile = null;
+          localStorage.removeItem('ccner-token');
+          localStorage.removeItem('ccner-auth-session');
+        }
+      } catch (e) {
+        // Network offline fallback: restore from cached session if available
+        const cached = localStorage.getItem('ccner-auth-session');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.user) {
+              currentUser = parsed.user;
+              currentProfile = parsed.profile;
+              routeAfterAuth(currentUser.role === 'caregiver' ? '/caregiver/dashboard' : '/patient/dashboard');
+              return;
+            }
+          } catch (_) {}
+        }
+      }
     }
+
+    renderGate();
+    showStep(0);
   }
 
   window.CCNERAuth = {
