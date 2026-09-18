@@ -8,17 +8,81 @@
     memory:'This game is Spot the Difference. First, look carefully at the familiar objects Momo shows you and remember them. The objects will then change slightly. Choose the object that changed. Momo gives immediate feedback and moves to the next round automatically. Three consecutive mistakes move to the next game.'
   };
   function injectStyles(){if(document.getElementById('gameControlsStyle'))return;const s=document.createElement('style');s.id='gameControlsStyle';s.textContent=`.game-control-row{display:flex;gap:12px;align-items:center;justify-content:flex-end;margin:0 0 14px;flex-wrap:wrap}.game-exit-button{min-height:52px;padding:12px 22px;border-radius:16px;border:2px solid #c56b48;background:#fff7f1;color:#8d3e27;font-weight:800;font-size:1rem;cursor:pointer;box-shadow:0 4px 12px rgba(80,50,30,.08)}.game-exit-button:hover{transform:translateY(-1px)}.game-controls-overlay{position:fixed;inset:0;z-index:10000;background:rgba(30,22,17,.56);display:grid;place-items:center;padding:20px}.game-controls-card{width:min(680px,96vw);background:#fffaf5;border-radius:28px;padding:30px;box-shadow:0 24px 80px rgba(0,0,0,.28);text-align:center}.game-controls-card h3{font-size:clamp(1.7rem,4vw,2.3rem);margin:8px 0 12px}.game-controls-card p{font-size:clamp(1.08rem,2.4vw,1.3rem);line-height:1.65;margin:12px 0}.game-controls-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:22px}.game-controls-actions button{min-width:150px;min-height:58px;border:0;border-radius:18px;padding:14px 24px;font-size:1.08rem;font-weight:800;cursor:pointer}.game-controls-primary{background:#d9794f;color:#fff}.game-controls-secondary{background:#eee3d8;color:#5d4436}.game-tutorial-badge{display:inline-block;font-size:.85rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#a45335}@media(max-width:600px){.game-control-row{justify-content:stretch}.game-exit-button{width:100%}.game-controls-card{padding:22px 18px}.game-controls-actions button{width:100%}}`;document.head.appendChild(s)}
-  function ensureExitButton(){const view=document.querySelector('#gameView');if(!view||document.getElementById('gameExitButton'))return;const button=document.createElement('button');button.id='gameExitButton';button.type='button';button.className='game-exit-button';button.textContent='Exit Game';button.setAttribute('aria-label','Exit game and return home');const row=document.createElement('div');row.className='game-control-row';row.id='gameControlRow';row.appendChild(button);const anchor=view.querySelector('#gameTitle')?.closest('header,section,div')||view.firstElementChild;if(anchor?.parentNode)anchor.parentNode.insertBefore(row,anchor.nextSibling);else view.prepend(row);button.addEventListener('click',()=>confirmExit())}
-  function removeExitButton(){document.getElementById('gameControlRow')?.remove()}
-  function overlay(title,body,actions){document.getElementById('gameControlsOverlay')?.remove();const o=document.createElement('div');o.id='gameControlsOverlay';o.className='game-controls-overlay';o.innerHTML=`<div class="game-controls-card" role="dialog" aria-modal="true" aria-labelledby="gameControlsTitle"><span class="game-tutorial-badge">Momo</span><h3 id="gameControlsTitle">${title}</h3><p>${body}</p><div class="game-controls-actions">${actions}</div></div>`;document.body.appendChild(o);return o}
-  function confirmExit(){if(!state?.sessionStarted)return;stopGameVoice();const o=overlay('Leave this game?','Your current game will end and you will return to the home screen. You can start a new session whenever you like.',`<button id="gameStay" class="game-controls-secondary" type="button">Continue Game</button><button id="gameLeave" class="game-controls-primary" type="button">Exit Game</button>`);o.querySelector('#gameStay').onclick=()=>{o.remove();resumeGameVoice()};o.querySelector('#gameLeave').onclick=()=>{o.remove();exitSession()}}
-  function exitSession(){if(!state)return;state.sessionStarted=false;state.current=null;state.games=[];state.index=0;try{window.speechSynthesis?.cancel()}catch(_){}try{window.stopListening?.(false)}catch(_){}state.voiceArmed=false;state.listening=false;state.speaking=false;state.thinking=false;removeExitButton();try{showView('#homeView')}catch(_){}try{setStatus('Ready to play')}catch(_){}try{say('No problem. We are back home. We can play whenever you are ready. 😸','happy','ready',{silent:false})}catch(_){} }
+  function isGameActive(){return Boolean(state?.sessionStarted||window.CCNERRuleEngine?.state()?.game==='running'||document.body.classList.contains('ccner-game-active'))}
+  function ensureExitButton(){
+    document.body.classList.add('ccner-game-active');
+    window.CCNERRuleEngine?.setState?.({navState:'ACTIVE_GAME'});
+    const staticBtn=document.getElementById('gameExitBtn');
+    if(staticBtn) staticBtn.onclick=()=>confirmExit();
+    const view=document.querySelector('#gameView');
+    if(!view||document.getElementById('gameExitButton'))return;
+    const button=document.createElement('button');
+    button.id='gameExitButton';
+    button.type='button';
+    button.className='game-exit-button';
+    button.textContent='Exit Game';
+    button.setAttribute('aria-label','Exit this game');
+    const row=document.createElement('div');
+    row.className='game-control-row';
+    row.id='gameControlRow';
+    row.appendChild(button);
+    const anchor=view.querySelector('#gameTitle')?.closest('header,section,div')||view.firstElementChild;
+    if(anchor?.parentNode)anchor.parentNode.insertBefore(row,anchor.nextSibling);else view.prepend(row);
+    button.addEventListener('click',()=>confirmExit());
+  }
+  function removeExitButton(){
+    document.body.classList.remove('ccner-game-active');
+    document.getElementById('gameControlRow')?.remove();
+  }
+  function overlay(title,body,actions){
+    document.getElementById('gameControlsOverlay')?.remove();
+    const o=document.createElement('div');
+    o.id='gameControlsOverlay';
+    o.className='game-controls-overlay';
+    o.innerHTML=`<div class="game-controls-card" role="dialog" aria-modal="true" aria-labelledby="gameControlsTitle"><span class="game-tutorial-badge">Momo</span><h3 id="gameControlsTitle">${title}</h3><p>${body}</p><div class="game-controls-actions">${actions}</div></div>`;
+    document.body.appendChild(o);
+    return o;
+  }
+  function confirmExit(){
+    if(!isGameActive())return;
+    stopGameVoice();
+    const o=overlay('Exit this game?','Your current game progress may not be saved.',`<button id="gameStay" class="game-controls-primary" type="button">Continue Game</button><button id="gameLeave" class="game-controls-secondary" type="button">Exit Game</button>`);
+    o.querySelector('#gameStay').onclick=()=>{o.remove();resumeGameVoice()};
+    o.querySelector('#gameLeave').onclick=()=>{o.remove();exitSession()};
+  }
+  function exitSession(){
+    if(!state)return;
+    state.sessionStarted=false;
+    state.current=null;
+    state.games=[];
+    state.index=0;
+    try{window.speechSynthesis?.cancel()}catch(_){}
+    try{window.stopListening?.(false)}catch(_){}
+    state.voiceArmed=false;
+    state.listening=false;
+    state.speaking=false;
+    state.thinking=false;
+    removeExitButton();
+    try{window.CCNERRuleEngine?.transition?.('game','exited')}catch(_){}
+    try{window.CCNERRuleEngine?.transition?.('game','idle')}catch(_){}
+    try{window.CCNERRuleEngine?.setState?.({navState:'HOME'})}catch(_){}
+    try{showView('#homeView')}catch(_){}
+    try{setStatus('Ready to play')}catch(_){}
+    try{say('No problem. We are back home. We can play whenever you are ready. 😸','happy','ready',{silent:false})}catch(_){}
+  }
   function stopGameVoice(){try{window.stopListening?.(false)}catch(_){}try{window.speechSynthesis?.cancel()}catch(_){} }
   function resumeGameVoice(){if(state?.voiceArmed)window.queueListening?.(250)}
   function tutorialFor(key){return TUTORIALS[key]||'Momo will guide you step by step. Watch the screen, listen to the instruction, and tap the large answer buttons. After each answer, feedback appears and the game continues automatically. You do not need to restart.'}
   function askTutorial(key,continueGame){const gameName=catalog?.[key]?.name||'this game';stopGameVoice();const o=overlay(`Would you like a tutorial for ${gameName}?`,'If you know how to play, choose No and the game will start normally. Choose Yes and Momo will explain the complete game step by step. If Voice mode is on, you can also say “yes” or “no”.',`<button id="tutorialNo" class="game-controls-secondary" type="button">No, start game</button><button id="tutorialYes" class="game-controls-primary" type="button">Yes, explain</button>`);o.querySelector('#tutorialNo').onclick=()=>{window.__tutorialPending=null;o.remove();state.voiceArmed=false;stopGameVoice();continueGame()};o.querySelector('#tutorialYes').onclick=()=>{o.remove();playTutorial(key,continueGame)};window.__tutorialPending={key,continueGame};say('Would you like me to explain how this game works? You can say yes or no.','happy','ready')}
   function playTutorial(key,continueGame){window.__tutorialPending=null;const text=tutorialFor(key);const o=overlay('How to play',text,`<button id="tutorialContinue" class="game-controls-primary" type="button" disabled>Start Game</button>`);const startButton=o.querySelector('#tutorialContinue');say(text,'happy','teaching',{after:()=>{startButton.disabled=false;state.voiceArmed=false;stopGameVoice()}});startButton.onclick=()=>{if(startButton.disabled)return;document.getElementById('gameControlsOverlay')?.remove();state.voiceArmed=false;stopGameVoice();continueGame()}}
   function handleSpecialVoice(raw){const text=String(raw||'').trim().toLowerCase();if(!text)return false;if(state?.sessionStarted&&(/^(exit|quit|leave|stop|end|cancel)(\s+(the\s+)?(game|session|playing))?$/.test(text)||/^(go home|back home|exit game|quit game|leave game|stop game|end game|cancel game)$/.test(text))){confirmExit();return true}const p=window.__tutorialPending;if(p){if(/\b(yes|yeah|yep|sure|okay|ok|explain|teach me)\b/.test(text)){playTutorial(p.key,p.continueGame);return true}if(/\b(no|nope|skip|start)\b/.test(text)){window.__tutorialPending=null;document.getElementById('gameControlsOverlay')?.remove();state.voiceArmed=false;stopGameVoice();p.continueGame();return true}}return false}
-  function install(){if(typeof state==='undefined'||typeof loadGame!=='function'||typeof runGame!=='function'||typeof respond!=='function')return false;injectStyles();ensureExitButton();window.CCNERGameControls={muteVoice:()=>{state.voiceArmed=false;stopGameVoice()},resumeVoice:()=>resumeGameVoice(),wakeVoice:()=>{state.voiceArmed=true;window.queueListening?.(100)}};if(!window.__gameControlsRespondWrapped){const oldRespond=respond;window.respond=function(text){if(handleSpecialVoice(text))return;return oldRespond(text)};window.__gameControlsRespondWrapped=true}const currentRun=runGame;if(currentRun!==window.__gameControlsRunWrapper){const oldRun=currentRun;window.__gameControlsRunWrapper=function(key){if(state.current?.tutorialShown)return oldRun(key);if(state.current)state.current.tutorialShown=true;askTutorial(key,()=>oldRun(key))};window.runGame=window.__gameControlsRunWrapper}if(!window.__gameControlsShowWrapped){const oldShowView=showView;window.showView=function(id){const result=oldShowView(id);if(id==='#gameView')ensureExitButton();else removeExitButton();return result};window.__gameControlsShowWrapped=true}return true}
+  function install(){if(typeof state==='undefined'||typeof loadGame!=='function'||typeof runGame!=='function'||typeof respond!=='function')return false;injectStyles();ensureExitButton();    window.CCNERGameControls={
+      muteVoice:()=>{state.voiceArmed=false;stopGameVoice()},
+      resumeVoice:()=>resumeGameVoice(),
+      wakeVoice:()=>{state.voiceArmed=true;window.queueListening?.(100)},
+      confirmExit:()=>confirmExit(),
+      exitSession:()=>exitSession(),
+      isGameActive:()=>isGameActive()
+    };if(!window.__gameControlsRespondWrapped){const oldRespond=respond;window.respond=function(text){if(handleSpecialVoice(text))return;return oldRespond(text)};window.__gameControlsRespondWrapped=true}const currentRun=runGame;if(currentRun!==window.__gameControlsRunWrapper){const oldRun=currentRun;window.__gameControlsRunWrapper=function(key){if(state.current?.tutorialShown)return oldRun(key);if(state.current)state.current.tutorialShown=true;askTutorial(key,()=>oldRun(key))};window.runGame=window.__gameControlsRunWrapper}if(!window.__gameControlsShowWrapped){const oldShowView=showView;window.showView=function(id){const result=oldShowView(id);if(id==='#gameView')ensureExitButton();else removeExitButton();return result};window.__gameControlsShowWrapped=true}return true}
   const timer=setInterval(install,100);setTimeout(()=>clearInterval(timer),20000);
 })();
