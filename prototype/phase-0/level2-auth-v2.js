@@ -638,11 +638,11 @@
        return renderPatientDashboard();
     }
     if (path === '/patient/dashboard' && (currentUser?.role === 'caregiver' || currentUser?.role === 'health_worker')) {
-       return renderCaregiverDashboard();
+       return renderCaregiverDashboardWithLoading();
     }
 
     if (currentUser?.role === 'caregiver' || currentUser?.role === 'health_worker') {
-      renderCaregiverDashboard();
+      renderCaregiverDashboardWithLoading();
     } else {
       renderPatientDashboard();
     }
@@ -650,6 +650,33 @@
     if (window.CCNERDrawer) {
       window.CCNERDrawer.update();
     }
+  }
+
+  function renderCaregiverDashboardWithLoading() {
+    hideApp();
+    const existingCg = document.getElementById('caregiverDashboardView');
+    if (existingCg) existingCg.style.display = 'none';
+
+    let loader = document.getElementById('cgLoaderView');
+    if (!loader) {
+      loader = document.createElement('div');
+      loader.id = 'cgLoaderView';
+      loader.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#f8fafc;font-family:system-ui,sans-serif">
+          <div style="width:50px;height:50px;border:4px solid #cbd5e1;border-top-color:#0056b3;border-radius:50%;animation:spin 1s linear infinite;"></div>
+          <h2 style="color:#1e293b;margin-top:20px;">Securing Caregiver Portal</h2>
+          <p style="color:#64748b;">Syncing clinical records and insights...</p>
+          <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+        </div>
+      `;
+      document.body.appendChild(loader);
+    }
+    loader.style.display = 'block';
+
+    setTimeout(() => {
+      loader.style.display = 'none';
+      renderCaregiverDashboard();
+    }, 1500);
   }
 
   // 1. PATIENT DASHBOARD EXPERIENCE (Elderly-Friendly, Mimo Rig, No Caregiver Controls)
