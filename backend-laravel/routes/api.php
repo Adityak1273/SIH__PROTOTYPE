@@ -21,10 +21,6 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/magic-link', [MagicLinkController::class, 'sendLink']);
     Route::get('/auth/magic-link/verify/{user}', [MagicLinkController::class, 'verify'])->name('api.magic-link.verify');
 
-    // Centralized Rule Engine (Direct Evaluation & State Inspection)
-    Route::post('/rules/evaluate', [RuleEngineController::class, 'evaluate']);
-    Route::get('/rules/state', [RuleEngineController::class, 'state']);
-
     // Authenticated API routes
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/auth/user', [AuthController::class, 'user']);
@@ -32,6 +28,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/auth/logout-all', [AuthController::class, 'logoutAll']);
         Route::post('/auth/elevate-role', [AuthController::class, 'elevateRole']);
+
+        // Centralized Rule Engine (Direct Evaluation & State Inspection - Authenticated)
+        Route::post('/rules/evaluate', [RuleEngineController::class, 'evaluate']);
+        Route::get('/rules/state', [RuleEngineController::class, 'state']);
 
         // Offline-Sync Batch Endpoint (Idempotent Outbox Sync)
         Route::post('/sync/batch', [OfflineSyncController::class, 'syncBatch']);
