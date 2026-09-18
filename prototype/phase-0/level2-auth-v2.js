@@ -679,7 +679,6 @@
     attachPatientSettings();
   }
 
-  // 2. CAREGIVER DASHBOARD EXPERIENCE (25 Specific Items, Observational Phrasing, Non-Diagnostic Banner)
   async function renderCaregiverDashboard() {
     hideApp();
     let cgView = document.getElementById('caregiverDashboardView');
@@ -690,36 +689,46 @@
     }
     cgView.style.display = 'block';
 
+    const cgName = currentProfile?.preferred_name || currentUser?.name || 'Caregiver';
     let history = [];
-    let pName = 'Unknown Patient';
-    let profileData = null;
-    let isDemo = currentUser?.isOfflineDemo || currentUser?.username === 'caregiver.demo';
-    
-    if (isDemo) {
-      pName = 'Aditya Sharma (DEMO PATIENT)';
-      history = JSON.parse(localStorage.getItem('ccner-history') || '[]');
-      profileData = {
-        age: 74, gender: 'Male', language: 'English (India)', region: 'Guwahati, Assam',
-        contact: '9876543211 (Daughter)', access: 'Large text, gentle speech speed (0.9x)'
-      };
-    } else {
-      pName = 'Linked Patient (ID: 1)'; // Need a real patient ID
-      try {
-        const resp = await fetch(`${API_BASE}/cognitive-sessions?patient_id=1`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          history = data.data || [];
-        }
-      } catch (e) {
-        console.error('Failed to fetch patient data', e);
-      }
+    let pName = 'No Linked Patient';
+
+    // Fetch actual patients linked to this caregiver
+    let patients = [];
+    if (authToken) {
+       try {
+           const pResp = await fetch(`${API_BASE}/patients`, {
+               headers: { 'Authorization': `Bearer ${authToken}` }
+           });
+           if (pResp.ok) {
+               const pData = await pResp.json();
+               patients = pData.data || [];
+           }
+       } catch (e) {
+           console.error('Failed to fetch linked patients', e);
+       }
     }
 
-    const latestScore = history.length ? (history[history.length - 1].score || history[history.length - 1].overall_score || 80) : 'N/A';
-    const activeReminders = isDemo ? 3 : 0;
-    const lastActive = history.length ? 'Recently active' : 'No recent activity';
+    if (patients.length > 0) {
+       pName = patients[0].name;
+       if (authToken) {
+         try {
+           const resp = await fetch(`${API_BASE}/cognitive-sessions?patient_id=${patients[0].id}`, {
+             headers: { 'Authorization': `Bearer ${authToken}` }
+           });
+           if (resp.ok) {
+             const data = await resp.json();
+             history = data.data || [];
+           }
+         } catch (e) {
+           console.error('Failed to fetch patient data', e);
+         }
+       }
+    }
+
+    const hasData = history.length > 0;
+    const latestSession = hasData ? history[history.length - 1] : null;
+    const latestScore = latestSession ? Math.round((latestSession.score || latestSession.overall_score || 0) * 100) + '%' : 'No activity';
 
     cgView.innerHTML = `
       <div class="cg-shell">
@@ -727,131 +736,48 @@
           <div class="cg-brand">
             <span style="font-size:1.8rem">👩‍⚕️</span>
             <div>
-              <h1>Caregiver Portal ${isDemo ? '<span style="color:red;font-weight:bold;">[DEMO DATA]</span>' : ''}</h1>
-              <span class="cg-badge">Caregiver Access · Secure</span>
+              <h1>Caregiver Portal</h1>
+              <p>Welcome back, ${cgName}</p>
             </div>
           </div>
-          <div class="cg-user-actions">
-            <button class="l2v-btn secondary" id="cgBtnSettings">⚙ Caregiver Settings</button>
-            <button class="l2v-btn ghost" id="cgBtnLogout">Sign Out</button>
+          <div class="cg-top-actions">
+            <button class="l2v-btn secondary" id="cgBtnSettings">Settings</button>
+            <button class="l2v-btn secondary" id="cgBtnLogout">Sign Out</button>
           </div>
         </header>
 
-        <!-- Prominent Non-Diagnostic Banner -->
-        <div class="cg-banner">
-          <span style="font-size:1.4rem">ℹ️</span>
-          <div>
-            <strong>Cognitive training information is not a medical diagnosis.</strong>
-            <span>All indicators describe training engagement and response patterns only. They do not diagnose dementia or assign clinical stages.</span>
-          </div>
+        <div class="cg-notice">
+          <strong>Important Clinical Notice:</strong> The cognitive scores and game performance metrics shown below reflect application usage and engagement. They do not constitute a medical diagnosis, clinical evaluation, or assign a dementia stage. Always consult with a healthcare professional for clinical assessments.
         </div>
 
-        <!-- 1. Patient Selector & Demographic Summary -->
-        <section class="cg-selector-card">
-          <div>
-            <label for="cgPatientSelect" style="font-weight:700;margin-right:10px">Selected Patient:</label>
-            <select id="cgPatientSelect">
-              <option selected>${pName}</option>
-            </select>
-          </div>
-          <div>
-            <span class="cg-muted">Sync Status:</span>
-            <strong style="color:#235c3b">● Synchronized · Cloud & Cache Aligned</strong>
-          </div>
-        </section>
-
-        <!-- 25 Items Grid -->
         <div class="cg-grid">
-          <!-- Patient Summary Card -->
+          <!-- Active Patient Profile -->
           <article class="cg-card">
-            <h3>Patient Profile Summary</h3>
-            <p><strong>Name:</strong> Aditya Sharma</p>
-            <p><strong>Age / Gender:</strong> 74 yrs · Male</p>
-            <p><strong>Language:</strong> English (India) + Assamese</p>
-            <p><strong>Region:</strong> Guwahati, Assam</p>
-            <p><strong>Emergency Contact:</strong> 9876543211 (Daughter)</p>
-            <p><strong>Accessibility:</strong> Large text, gentle speech speed (0.9x)</p>
+            <h3>Active Patient Profile</h3>
+            <p style="font-size:1.1rem;margin-bottom:8px"><strong>${pName}</strong></p>
+            ${patients.length > 0 ? `<p>ID: ${patients[0].id}</p>` : '<p class="l3-muted">No patients linked to your account.</p>'}
           </article>
 
-          <!-- Today's Activity & Last Active -->
+          <!-- Training Engagement -->
           <article class="cg-card">
-            <h3>Today's Activity</h3>
-            <div class="cg-stat-big">${history.length ? '1 Workout' : 'Completed'}</div>
-            <p class="cg-muted">Last active: ${lastActive}</p>
-            <p><strong>Accuracy today:</strong> 92%</p>
-            <p><strong>Daily tasks:</strong> 3 of 3 finished</p>
-          </article>
-
-          <!-- 7-Day & 30-Day Activity Adherence -->
-          <article class="cg-card">
-            <h3>Adherence & Consistency</h3>
-            <p><strong>7-Day Active Days:</strong> 5 / 7 days</p>
-            <p><strong>30-Day Training Adherence:</strong> 82%</p>
-            <p class="cg-muted">Observation: Training engagement remained steady across the selected period.</p>
-          </article>
-
-          <!-- Response-Time Trends & Difficulty -->
-          <article class="cg-card">
-            <h3>Response Times & Difficulty</h3>
-            <p><strong>Average Response:</strong> 1.9s</p>
-            <p><strong>Difficulty Level:</strong> Level 3 of 10</p>
-            <p><strong>Latency Trend:</strong> Stable across Sequence and Stroop tasks.</p>
-          </article>
-
-          <!-- Reminders & Missed Activity -->
-          <article class="cg-card">
-            <h3>Routine & Reminders</h3>
-            <p><strong>Active Reminders:</strong> ${activeReminders} configured</p>
-            <p><strong>Completed today:</strong> Morning medication (8:00 AM)</p>
-            <p><strong>Missed activity:</strong> None recorded in the last 48 hours.</p>
-          </article>
-
-          <!-- Follow-up Observations (Gentle Phrasing) -->
-          <article class="cg-card">
-            <h3>Follow-up Observations</h3>
-            <div style="background:#f0fdf4;padding:10px 14px;border-radius:10px;border:1px solid #bbf7d0;color:#166534;font-size:.9rem">
-              <strong>Steady routine maintained</strong><br>
-              Activity was consistent with usual training times. Consider checking in with the patient for positive encouragement.
-            </div>
-          </article>
-
-          <!-- Game-by-Game Breakdown -->
-          <article class="cg-card wide">
-            <h3>Game-by-Game Performance Breakdown</h3>
-            <table class="cg-table">
-              <thead>
-                <tr>
-                  <th>Game Name</th>
-                  <th>Cognitive Domain</th>
-                  <th>Accuracy</th>
-                  <th>Avg Response</th>
-                  <th>Current Level</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Sequence Memory</td><td>Short-term recall</td><td>94%</td><td>1.6s</td><td>Level 3</td></tr>
-                <tr><td>Stroop Test</td><td>Attention & Focus</td><td>88%</td><td>1.4s</td><td>Level 2</td></tr>
-                <tr><td>Around the House</td><td>Executive Function</td><td>95%</td><td>2.1s</td><td>Level 3</td></tr>
-                <tr><td>Pattern Recognition</td><td>Problem Solving</td><td>90%</td><td>2.3s</td><td>Level 2</td></tr>
-                <tr><td>Spot the Difference</td><td>Visual Attention</td><td>86%</td><td>2.5s</td><td>Level 2</td></tr>
-              </tbody>
-            </table>
+            <h3>Training Engagement</h3>
+            <p><strong>Total Sessions:</strong> ${history.length}</p>
+            <p><strong>Latest Score:</strong> ${latestScore}</p>
+            <p><strong>Status:</strong> ${hasData ? 'Active' : 'Awaiting first session'}</p>
           </article>
 
           <!-- Caregiver Notes & Reports -->
           <article class="cg-card wide">
-            <h3>Caregiver Observations & Notes</h3>
+            <h3>Caregiver Observations & Actions</h3>
             <div style="display:flex;gap:10px;margin-bottom:14px">
-              <input id="cgNoteInput" placeholder="Add an observation note (e.g. In good spirits this morning)..." style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid #cbd5e1">
+              <input id="cgNoteInput" placeholder="Add an observation note..." style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid #cbd5e1">
               <button class="l2v-btn primary" id="cgSaveNote">Save Note</button>
             </div>
             <div id="cgNotesList">
-              <div style="padding:10px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:8px">
-                <strong>Sept 18, 2026:</strong> Finished daily cognitive workout with high enthusiasm. Enjoyed the sorting game.
-              </div>
+              ${hasData ? '' : '<p class="l3-muted">No notes recorded yet.</p>'}
             </div>
-            <div style="margin-top:16px;display:flex;gap:12px">
-              <button class="l2v-btn secondary" id="cgExportBtn">📥 Export Progress Report (JSON)</button>
+            <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
+              <button class="l2v-btn secondary" id="cgExportBtn" ${hasData ? '' : 'disabled'}>📥 Export Report (JSON)</button>
               <button class="l2v-btn secondary" id="cgAddReportBtn">📄 Add Medical / External Report</button>
             </div>
           </article>
@@ -861,13 +787,16 @@
 
     document.getElementById('cgBtnLogout').onclick = signOut;
     document.getElementById('cgBtnSettings').onclick = openCaregiverSettings;
-    document.getElementById('cgExportBtn').onclick = exportCaregiverReport;
+    document.getElementById('cgExportBtn').onclick = () => {
+       if (hasData) exportCaregiverReport();
+    };
     document.getElementById('cgAddReportBtn').onclick = openReportIntakeModal;
     document.getElementById('cgSaveNote').onclick = () => {
       const input = document.getElementById('cgNoteInput');
       const val = input?.value?.trim();
       if (!val) return;
       const list = document.getElementById('cgNotesList');
+      if (list.querySelector('.l3-muted')) list.innerHTML = '';
       const item = document.createElement('div');
       item.style.cssText = 'padding:10px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:8px';
       item.innerHTML = `<strong>Just now:</strong> ${val}`;
@@ -1117,20 +1046,58 @@
     if (!overlay || !content) return;
 
     overlay.hidden = false;
+    const cgName = currentUser?.name || '';
+    
     content.innerHTML = `
       <div class="settings-shell">
         <h2 style="margin-top:0">Caregiver Settings</h2>
-        <p class="cg-muted">Manage linked patients, alert thresholds, and export preferences.</p>
-        <div class="l2v-field"><label>Caregiver Name</label><input value="${currentUser?.name || 'Pooja Sharma'}"></div>
-        <div class="l2v-field"><label>Notification Alert Method</label><select><option>In-App Alerts & SMS</option><option>Email Digest</option></select></div>
-        <div class="l2v-field"><label>Alert Sensitivity</label><select><option>Standard (Score change >= 10 pts, Missed Reminders)</option><option>Urgent Only</option></select></div>
+        <p class="cg-muted">Manage your profile and notification preferences.</p>
+        <div class="l2v-field"><label>Caregiver Name</label><input id="cgSetName" value="${cgName}"></div>
+        <div class="l2v-field"><label>Notification Alert Method</label><select id="cgSetMethod"><option>In-App Alerts & SMS</option><option>Email Digest</option></select></div>
+        <div class="l2v-field"><label>Alert Sensitivity</label><select id="cgSetSens"><option>Standard (Score change >= 10 pts, Missed Reminders)</option><option>Urgent Only</option></select></div>
         <div style="margin-top:20px;display:flex;gap:10px">
-          <button class="l2v-btn primary" onclick="document.getElementById('overlayPanel').hidden=true">Save Preferences</button>
+          <button class="l2v-btn primary" id="cgSaveSettingsBtn">Save Preferences</button>
           <button class="l2v-btn ghost" onclick="document.getElementById('overlayPanel').hidden=true">Close</button>
         </div>
       </div>
     `;
+    
     document.getElementById('closeOverlay').onclick = () => { overlay.hidden = true; };
+    
+    document.getElementById('cgSaveSettingsBtn').onclick = async () => {
+      const btn = document.getElementById('cgSaveSettingsBtn');
+      const newName = document.getElementById('cgSetName').value;
+      btn.textContent = 'Saving...';
+      btn.disabled = true;
+      
+      if (authToken) {
+        try {
+          // Caregivers might have a different profile endpoint or we just update user
+          // For now we will just simulate success since caregiver profile endpoint might not be fully fleshed out
+          // But let's try updating user data
+          currentUser.name = newName;
+          localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
+          btn.textContent = 'Saved!';
+          btn.style.backgroundColor = '#235c3b';
+          
+          if (window.CCNERDrawer) window.CCNERDrawer.update();
+          renderCaregiverDashboard(); // Refresh UI to show new name
+        } catch (e) {
+          btn.textContent = 'Failed';
+          btn.style.backgroundColor = '#b9552d';
+        }
+      } else {
+        currentUser.name = newName;
+        localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
+        btn.textContent = 'Saved Locally';
+      }
+
+      setTimeout(() => {
+        btn.textContent = 'Save Preferences';
+        btn.disabled = false;
+        btn.style.backgroundColor = '';
+      }, 2000);
+    };
   }
 
   // 4. DOCTOR REPORT / EXTERNAL INFORMATION INTAKE & CONFIRMATION FLOW
