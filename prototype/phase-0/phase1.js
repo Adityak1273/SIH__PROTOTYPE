@@ -48,9 +48,55 @@
     el.className = `p1-status${online && !syncQueue.some(x=>x.status==='pending')?'':' offline'}`;
     el.innerHTML = `<span class="p1-dot"></span>${online ? (syncQueue.some(x=>x.status==='pending') ? `${syncQueue.filter(x=>x.status==='pending').length} changes waiting to sync` : 'Online · all changes saved') : 'Offline · changes saved on this device'}`;
   }
-  function markQueueSynced(){
+  async function markQueueSynced(){
     if(!navigator.onLine) return;
-    if(!syncQueue.some(x=>x.status==='pending')) return;
+    const pending = syncQueue.filter(x=>x.status==='pending');
+    if(!pending.length) return;
+    
+    // Attempt to sync with server
+    const token = localStorage.getItem('ccner-token');
+    const API_BASE = window.CCNER_CONFIG?.API_BASE || 'http://localhost:8000/api/v1';
+
+    if (token && !token.startsWith('offline-demo-token-')) {
+      try {
+        const tasksPayload = pending.filter(x => x.type.startsWith('task.')).map(x => ({
+          client_id: x.payload.id,
+          title: x.payload.title,
+          completed: x.payload.completed,
+          task_date: x.payload.createdAt ? x.payload.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10)
+        }));
+        
+        const sessionsPayload = pending.filter(x => x.type === 'session.completed').map(x => ({
+           client_session_id: x.payload.id || x.payload.date || Date.now().toString(),
+           started_at: x.payload.date || new Date().toISOString(),
+           completed_at: x.payload.date || new Date().toISOString(),
+           overall_score: x.payload.score || 0,
+           accuracy: x.payload.accuracy || 0,
+           avg_response_time_seconds: x.payload.avgTime || 0,
+           games_completed: (x.payload.results||[]).length,
+           game_order: (x.payload.results||[]).map(r=>r.name),
+           results: (x.payload.results||[]).map((r, i) => ({
+              game: r.name,
+              trial: i + 1,
+              correct: r.correct,
+              seconds: r.seconds,
+              difficulty: 2
+           }))
+        }));
+
+        const resp = await fetch(`${API_BASE}/sync/batch`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ tasks: tasksPayload, sessions: sessionsPayload })
+        });
+        if (!resp.ok) throw new Error('Sync failed');
+      } catch (e) {
+        console.error('Server sync failed, keeping pending status:', e);
+        return;
+      }
+    }
+    
+    // Mark as synced only if successful (or if demo/offline mode where server sync isn't applicable)
     syncQueue = syncQueue.map(x=>({...x,status:'synced',syncedAt:now().toISOString()})).slice(-100);
     write(KEY.sync,syncQueue); updateSyncBadge();
   }

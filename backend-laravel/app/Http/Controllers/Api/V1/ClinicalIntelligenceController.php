@@ -24,6 +24,10 @@ class ClinicalIntelligenceController extends Controller
             ? User::findOrFail($request->input('patient_id'))
             : $request->user();
 
+        if ($targetUser->id !== $request->user()->id && !$request->user()->hasRole('caregiver', 'health_worker', 'admin')) {
+            abort(403, 'Unauthorized access to patient data.');
+        }
+
         $text = $request->input('report_text');
         $report = $this->clinicalService->storeReport(
             $targetUser,
@@ -60,6 +64,9 @@ class ClinicalIntelligenceController extends Controller
         $text = $validated['report_text'] ?? '';
         if (empty($text) && !empty($validated['report_id'])) {
             $report = ClinicalReport::findOrFail($validated['report_id']);
+            if ($report->user_id !== $request->user()->id && !$request->user()->hasRole('caregiver', 'health_worker', 'admin')) {
+                abort(403, 'Unauthorized access to report data.');
+            }
             $text = $report->extracted_text ?? '';
         }
 
@@ -85,6 +92,9 @@ class ClinicalIntelligenceController extends Controller
         $text = $validated['report_text'] ?? '';
         if (empty($text) && !empty($validated['report_id'])) {
             $report = ClinicalReport::findOrFail($validated['report_id']);
+            if ($report->user_id !== $request->user()->id && !$request->user()->hasRole('caregiver', 'health_worker', 'admin')) {
+                abort(403, 'Unauthorized access to report data.');
+            }
             $text = $report->extracted_text ?? '';
         }
 
@@ -115,6 +125,10 @@ class ClinicalIntelligenceController extends Controller
         $targetUser = !empty($validated['patient_id'])
             ? User::findOrFail($validated['patient_id'])
             : $request->user();
+
+        if ($targetUser->id !== $request->user()->id && !$request->user()->hasRole('caregiver', 'health_worker', 'admin')) {
+            abort(403, 'Unauthorized access to patient data.');
+        }
 
         $text = $validated['report_text'] ?? '';
         $filename = null;
@@ -184,6 +198,10 @@ class ClinicalIntelligenceController extends Controller
     public function getProfile(Request $request): JsonResponse
     {
         $patientId = $request->query('patient_id') ?: $request->user()->id;
+
+        if ($patientId != $request->user()->id && !$request->user()->hasRole('caregiver', 'health_worker', 'admin')) {
+            abort(403, 'Unauthorized access to patient data.');
+        }
 
         $latestReport = ClinicalReport::where('user_id', $patientId)
             ->latest()

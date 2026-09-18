@@ -566,20 +566,40 @@
     if (!idInput || !passInput) return msg('Please enter a login ID and password.');
     if (passInput.length < 8) return msg('Password must be at least 8 characters.');
 
-    currentUser = {
-      name: idInput,
-      username: idInput,
-      role: signupRole,
-    };
+    try {
+      const resp = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name: idInput, 
+          login_id: idInput, 
+          password: passInput, 
+          role: signupRole 
+        })
+      });
 
-    if (signupRole === 'caregiver') {
-      // Caregiver skips patient health onboarding directly to Caregiver dashboard
-      return completeCaregiverSignup();
+      if (!resp.ok) {
+        const err = await resp.json();
+        return msg(err.message || 'Registration failed.');
+      }
+
+      const data = await resp.json();
+      authToken = data.token;
+      localStorage.setItem('ccner-token', authToken);
+      currentUser = data.user;
+      currentProfile = data.profile;
+      localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
+
+      if (signupRole === 'caregiver') {
+        return routeAfterAuth(data.redirect_to || '/caregiver/dashboard');
+      }
+
+      // Patient goes to progressive onboarding
+      document.getElementById('l2vProgressBox').style.display = 'block';
+      showStep(2);
+    } catch (e) {
+      msg('Network connection unavailable. Please check connection.');
     }
-
-    // Patient goes to progressive onboarding
-    document.getElementById('l2vProgressBox').style.display = 'block';
-    showStep(2);
   }
 
   async function saveFullProfile() {
@@ -622,6 +642,7 @@
       name: isCaregiver ? 'Pooja Sharma' : 'Aditya Sharma',
       username: identifier,
       role: isCaregiver ? 'caregiver' : 'patient',
+      isOfflineDemo: true,
     };
     currentProfile = {
       full_name: currentUser.name,
@@ -684,7 +705,7 @@
   }
 
   // 2. CAREGIVER DASHBOARD EXPERIENCE (25 Specific Items, Observational Phrasing, Non-Diagnostic Banner)
-  function renderCaregiverDashboard() {
+  async function renderCaregiverDashboard() {
     hideApp();
     let cgView = document.getElementById('caregiverDashboardView');
     if (!cgView) {
@@ -694,11 +715,36 @@
     }
     cgView.style.display = 'block';
 
-    const pName = 'Aditya Sharma (patient.demo)';
-    const history = JSON.parse(localStorage.getItem('ccner-history') || '[]');
-    const latestScore = history.length ? (history[history.length - 1].score || 80) : 85;
-    const activeReminders = 3;
-    const lastActive = history.length ? 'Today at 10:15 AM' : '2 hours ago';
+    let history = [];
+    let pName = 'Unknown Patient';
+    let profileData = null;
+    let isDemo = currentUser?.isOfflineDemo || currentUser?.username === 'caregiver.demo';
+    
+    if (isDemo) {
+      pName = 'Aditya Sharma (DEMO PATIENT)';
+      history = JSON.parse(localStorage.getItem('ccner-history') || '[]');
+      profileData = {
+        age: 74, gender: 'Male', language: 'English (India)', region: 'Guwahati, Assam',
+        contact: '9876543211 (Daughter)', access: 'Large text, gentle speech speed (0.9x)'
+      };
+    } else {
+      pName = 'Linked Patient (ID: 1)'; // Need a real patient ID
+      try {
+        const resp = await fetch(`${API_BASE}/cognitive-sessions?patient_id=1`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          history = data.data || [];
+        }
+      } catch (e) {
+        console.error('Failed to fetch patient data', e);
+      }
+    }
+
+    const latestScore = history.length ? (history[history.length - 1].score || history[history.length - 1].overall_score || 80) : 'N/A';
+    const activeReminders = isDemo ? 3 : 0;
+    const lastActive = history.length ? 'Recently active' : 'No recent activity';
 
     cgView.innerHTML = `
       <div class="cg-shell">
@@ -706,7 +752,7 @@
           <div class="cg-brand">
             <span style="font-size:1.8rem">👩‍⚕️</span>
             <div>
-              <h1>Caregiver Portal</h1>
+              <h1>Caregiver Portal ${isDemo ? '<span style="color:red;font-weight:bold;">[DEMO DATA]</span>' : ''}</h1>
               <span class="cg-badge">Caregiver Access · Secure</span>
             </div>
           </div>
@@ -961,6 +1007,76 @@
     document.getElementById('setLogoutBtn').onclick = signOut;
     document.getElementById('setAddReportBtn').onclick = openReportIntakeModal;
     document.getElementById('closeOverlay').onclick = () => { overlay.hidden = true; };
+
+    const savePartial = async (updates) => {
+      Object.assign(currentProfile, updates);
+      if (authToken && !authToken.startsWith('offline-demo-token-')) {
+        try {
+          const resp = await fetch(`${API_BASE}/auth/profile`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify(currentProfile)
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            currentProfile = data.profile;
+            localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
+            alert('Settings saved successfully.');
+          } else {
+            alert('Failed to save settings to server.');
+          }
+        } catch (e) {
+          localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
+          alert('Network offline. Settings saved locally.');
+        }
+      } else {
+        localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
+        alert('Settings saved locally in demo mode.');
+      }
+    };
+
+    const gV = (id) => document.getElementById(id)?.value || '';
+
+    document.getElementById('setSaveProfile').onclick = () => savePartial({
+      full_name: gV('setPName'),
+      preferred_name: gV('setPPref'),
+      date_of_birth: gV('setPDob'),
+      city: gV('setPCity')
+    });
+
+    document.getElementById('setSaveCg').onclick = () => savePartial({
+      caregiver_info: {
+        ...(currentProfile.caregiver_info || {}),
+        caregiver_name: gV('setPCgName'),
+        relationship: gV('setPCgRel'),
+        emergency_contact: gV('setPEmerg')
+      }
+    });
+
+    document.getElementById('setSaveHealth').onclick = () => savePartial({
+      health_background: {
+        ...(currentProfile.health_background || {}),
+        known_conditions: gV('setPCond').split(',').map(s=>s.trim()).filter(Boolean),
+        medications: gV('setPMeds').split(',').map(s=>s.trim()).filter(Boolean),
+        allergies: gV('setPAllergies').split(',').map(s=>s.trim()).filter(Boolean)
+      }
+    });
+
+    document.getElementById('setSaveRoutine').onclick = () => savePartial({
+      daily_life_background: {
+        ...(currentProfile.daily_life_background || {}),
+        hobbies: gV('setPHobbies').split(',').map(s=>s.trim()).filter(Boolean),
+        daily_routine: gV('setPRoutine')
+      }
+    });
+
+    document.getElementById('setSaveAccess').onclick = () => savePartial({
+      accessibility_settings: {
+        ...(currentProfile.accessibility_settings || {}),
+        font_size: gV('setPSize') || 'large',
+        voice_speed: Number(gV('setPSpeed') || 1.0)
+      }
+    });
   }
 
   function openCaregiverSettings() {
@@ -1041,30 +1157,54 @@
     document.getElementById('repProcessBtn').onclick = processReportIntake;
   }
 
-  function processReportIntake() {
+  async function processReportIntake() {
     const text = document.getElementById('repText')?.value || '';
     const title = document.getElementById('repTitle')?.value || 'Doctor Report';
     const source = document.getElementById('repSource')?.value || 'doctor_report';
+    const fileInput = document.getElementById('repFile');
     const area = document.getElementById('repConfirmationArea');
     if (!area) return;
 
-    // Deterministic entity extractor
-    const conditions = [];
-    const meds = [];
-    const allergies = [];
+    if (!text && (!fileInput || !fileInput.files.length)) {
+      return alert('Please paste report text or upload a file.');
+    }
 
-    if (/asthma/i.test(text)) conditions.push('Asthma');
-    if (/hypertension|high blood pressure/i.test(text)) conditions.push('Hypertension');
-    if (/diabetes/i.test(text)) conditions.push('Type 2 Diabetes');
-    if (/memory|forgetful|cognitive/i.test(text)) conditions.push('Mild Cognitive Memory Concerns');
+    area.innerHTML = '<p>Processing report securely on server...</p>';
 
-    if (/donepezil/i.test(text)) meds.push('Donepezil 5mg');
-    if (/amlodipine/i.test(text)) meds.push('Amlodipine 5mg');
-    if (/metformin/i.test(text)) meds.push('Metformin');
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('source_type', source);
+    if (text) formData.append('report_text', text);
+    if (fileInput && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      if (file.type !== 'text/plain') {
+        // Warning user about non-txt files
+        alert('Notice: PDF/Image extraction is currently limited. Filename and metadata will be attached, but full OCR extraction may not be available. Please paste text manually if needed.');
+      }
+      formData.append('file', file);
+    }
 
-    if (/penicillin/i.test(text)) allergies.push('Penicillin');
-    if (/sulfa/i.test(text)) allergies.push('Sulfa drugs');
-    if (/aspirin allergy/i.test(text)) allergies.push('Aspirin allergy');
+    let result;
+    try {
+      const resp = await fetch(`${API_BASE}/clinical/intake`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        body: formData
+      });
+      if (!resp.ok) {
+        throw new Error(await resp.text());
+      }
+      result = await resp.json();
+    } catch (e) {
+      console.error(e);
+      area.innerHTML = '<p style="color:red">Failed to process report on server.</p>';
+      return;
+    }
+
+    const { possible_information_found, report_id } = result;
+    const conditions = possible_information_found?.conditions || [];
+    const meds = possible_information_found?.medications || [];
+    const allergies = possible_information_found?.allergies || [];
 
     area.innerHTML = `
       <div class="report-intake-card">
@@ -1072,16 +1212,19 @@
         <p class="cg-muted">Please confirm, edit, or ignore each item before it is applied to your health background.</p>
 
         <div class="entity-confirm-group">
-          ${conditions.map(c => renderEntityItem('Condition', 'conditions', c)).join('')}
-          ${meds.map(m => renderEntityItem('Medication', 'medications', m)).join('')}
-          ${allergies.map(a => renderEntityItem('Allergy', 'allergies', a)).join('')}
+          ${conditions.length ? conditions.map(c => renderEntityItem('Condition', 'conditions', c)).join('') : ''}
+          ${meds.length ? meds.map(m => renderEntityItem('Medication', 'medications', m)).join('') : ''}
+          ${allergies.length ? allergies.map(a => renderEntityItem('Allergy', 'allergies', a)).join('') : ''}
         </div>
+        ${(!conditions.length && !meds.length && !allergies.length) ? '<p>No specific medical items extracted. You can manually enter them in Settings.</p>' : ''}
 
         <div style="margin-top:20px">
           <button class="l2v-btn primary" id="btnSaveConfirmedEntities">Apply Confirmed Items to Profile</button>
         </div>
       </div>
     `;
+
+    const decisions = [];
 
     area.querySelectorAll('.btn-confirm').forEach(b => {
       b.onclick = () => {
@@ -1090,6 +1233,26 @@
         item.style.background = '#f0fdf4';
         b.textContent = '✓ Confirmed';
         b.disabled = true;
+        const type = item.dataset.type;
+        const val = item.querySelector('.entity-title').textContent;
+        decisions.push({ entity_type: type, original_value: item.dataset.val, status: 'confirmed', final_value: val });
+      };
+    });
+
+    area.querySelectorAll('.btn-edit').forEach(b => {
+      b.onclick = () => {
+        const item = b.closest('.entity-confirm-item');
+        const titleEl = item.querySelector('.entity-title');
+        const n = prompt('Edit value:', titleEl.textContent);
+        if (n) {
+           titleEl.textContent = n;
+           item.style.borderColor = '#235c3b';
+           item.style.background = '#f0fdf4';
+           b.closest('.entity-actions').querySelector('.btn-confirm').textContent = '✓ Confirmed';
+           b.closest('.entity-actions').querySelector('.btn-confirm').disabled = true;
+           const type = item.dataset.type;
+           decisions.push({ entity_type: type, original_value: item.dataset.val, status: 'edited', final_value: n });
+        }
       };
     });
 
@@ -1099,12 +1262,28 @@
         item.style.opacity = '0.4';
         b.textContent = 'Ignored';
         b.disabled = true;
+        const type = item.dataset.type;
+        decisions.push({ entity_type: type, original_value: item.dataset.val, status: 'ignored', final_value: null });
       };
     });
 
-    document.getElementById('btnSaveConfirmedEntities').onclick = () => {
-      alert('Confirmed items have been saved with source attribution (' + source + ') to your health background.');
-      document.getElementById('overlayPanel').hidden = true;
+    document.getElementById('btnSaveConfirmedEntities').onclick = async () => {
+      if (decisions.length === 0) return alert('Please confirm, edit, or ignore items first.');
+      try {
+        const resp = await fetch(`${API_BASE}/clinical/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ report_id, decisions })
+        });
+        if (resp.ok) {
+          alert('Confirmed items have been saved with source attribution (' + source + ') to your health background.');
+          document.getElementById('overlayPanel').hidden = true;
+        } else {
+          alert('Failed to save confirmed items.');
+        }
+      } catch (e) {
+        alert('Network error while saving confirmed items.');
+      }
     };
   }
 
@@ -1117,7 +1296,7 @@
         </div>
         <div class="entity-actions">
           <button class="btn-confirm">Confirm</button>
-          <button class="btn-edit" onclick="const n = prompt('Edit value:', '${val}'); if(n) this.closest('.entity-confirm-item').querySelector('.entity-title').textContent = n;">Edit</button>
+          <button class="btn-edit">Edit</button>
           <button class="btn-ignore">Ignore</button>
         </div>
       </div>
@@ -1186,6 +1365,7 @@
             const parsed = JSON.parse(cached);
             if (parsed && parsed.user) {
               currentUser = parsed.user;
+              currentUser.isOfflineDemo = true;
               currentProfile = parsed.profile;
               routeAfterAuth(currentUser.role === 'caregiver' ? '/caregiver/dashboard' : '/patient/dashboard');
               return;
@@ -1226,6 +1406,7 @@
             const parsed = JSON.parse(cached);
             if (parsed && parsed.user) {
               currentUser = parsed.user;
+              currentUser.isOfflineRestored = true;
               currentProfile = parsed.profile;
               routeAfterAuth(currentUser.role === 'caregiver' ? '/caregiver/dashboard' : '/patient/dashboard');
               return;

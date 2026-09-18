@@ -18,7 +18,14 @@ class CognitiveSessionController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $sessions = CognitiveSession::where('user_id', $request->user()->id)
+        $patientId = $request->query('patient_id') ?: $request->user()->id;
+
+        // Caregiver authorization
+        if ($patientId != $request->user()->id && !$request->user()->hasRole('caregiver', 'health_worker', 'admin')) {
+            abort(403, 'Unauthorized access to patient data.');
+        }
+
+        $sessions = CognitiveSession::where('user_id', $patientId)
             ->with('gameResults')
             ->orderByDesc('completed_at')
             ->paginate(15);
