@@ -28,13 +28,16 @@ Route::prefix('v1')->group(function () {
     // Authenticated API routes
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/auth/user', [AuthController::class, 'user']);
+        Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::post('/auth/logout-all', [AuthController::class, 'logoutAll']);
+        Route::post('/auth/elevate-role', [AuthController::class, 'elevateRole']);
 
         // Offline-Sync Batch Endpoint (Idempotent Outbox Sync)
         Route::post('/sync/batch', [OfflineSyncController::class, 'syncBatch']);
 
-        // Cognitive Sessions & Adaptive baselines (Protected from unrestricted admin access)
-        Route::middleware(['no.admin.medical'])->group(function () {
+        // Cognitive Sessions & Adaptive baselines (Protected from admin medical access & incomplete profiles)
+        Route::middleware(['no.admin.medical', 'profile.complete'])->group(function () {
             Route::apiResource('cognitive-sessions', CognitiveSessionController::class)->only(['index', 'store', 'show']);
             Route::post('/adaptive/recommendation', [AdaptiveDifficultyController::class, 'recommend']);
             Route::get('/adaptive/baselines', [AdaptiveDifficultyController::class, 'baselines']);

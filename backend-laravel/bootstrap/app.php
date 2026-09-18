@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\BlockAdminMedicalAccess;
 use App\Http\Middleware\EnsurePatientLinked;
+use App\Http\Middleware\EnsureProfileComplete;
 use App\Http\Middleware\EnsureUserRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserRole::class,
             'no.admin.medical' => BlockAdminMedicalAccess::class,
             'linked.patient' => EnsurePatientLinked::class,
+            'profile.complete' => EnsureProfileComplete::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

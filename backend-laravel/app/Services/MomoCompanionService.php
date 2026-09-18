@@ -28,8 +28,19 @@ class MomoCompanionService
     public function buildMinimumContext(User $user, string $screen = 'home', string $game = 'none', int $level = 1): array
     {
         $profile = $user->profile;
-        $languageCode = $profile?->preferred_language ?? 'en-IN';
-        $languageMeta = LanguageRegistry::getLanguage($languageCode);
+        $requestedLanguage = $profile?->preferred_language ?? 'en-IN';
+        $languageMeta = LanguageRegistry::getLanguage($requestedLanguage);
+
+        // Adversarial Defense: Fallback to en-IN if language is unregistered or unsupported
+        if (!$languageMeta) {
+            $languageCode = 'en-IN';
+            $languageMeta = LanguageRegistry::getLanguage('en-IN') ?? [
+                'id' => 'en-IN',
+                'name' => 'English',
+            ];
+        } else {
+            $languageCode = $requestedLanguage;
+        }
 
         return [
             'patient_first_name' => explode(' ', trim($profile?->full_name ?? $user->name))[0] ?? 'Friend',

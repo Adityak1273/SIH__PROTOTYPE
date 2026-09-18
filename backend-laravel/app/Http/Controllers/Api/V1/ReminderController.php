@@ -16,9 +16,22 @@ class ReminderController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $userId = $request->query('patient_id') ?: $request->user()->id;
+        $user = $request->user();
+        $targetPatientId = $request->query('patient_id') ? (int) $request->query('patient_id') : $user->id;
 
-        $reminders = Reminder::where('user_id', $userId)
+        // Cross-patient authorization check
+        if ($targetPatientId !== $user->id) {
+            $hasActiveLink = \App\Models\CaregiverPatientLink::where('caregiver_user_id', $user->id)
+                ->where('patient_user_id', $targetPatientId)
+                ->where('status', 'active')
+                ->exists();
+
+            if (!$hasActiveLink) {
+                abort(403, 'Unauthorized: Cross-patient reminder access is forbidden.');
+            }
+        }
+
+        $reminders = Reminder::where('user_id', $targetPatientId)
             ->where('active', true)
             ->orderBy('reminder_time')
             ->get();
@@ -29,11 +42,42 @@ class ReminderController extends Controller
     public function store(StoreReminderRequest $request): JsonResponse
     {
         $user = $request->user();
-        $targetUserId = $request->input('patient_id') ?: $user->id;
+        $targetUserId = $request->input('patient_id') ? (int) $request->input('patient_id') : $user->id;
+        $targetPatient = \App\Models\User::findOrFail($targetUserId);
+
+        $this->authorize('create', [Reminder::class, $targetPatient]);
+
+        $clientId = $request->input('client_id');
+
+        // Adversarial Defense: Idempotent deduplication by client_id
+        if ($clientId) {
+            $existing = Reminder::where('user_id', $targetUserId)
+                ->where('client_id', $clientId)
+                ->first();
+
+            if ($existing) {
+                return (new ReminderResource($existing))
+                    ->response()
+                    ->setStatusCode(200);
+            }
+        }
+
+        // Adversarial Defense: Duplicate reminder suppression within identical time slot
+        $duplicate = Reminder::where('user_id', $targetUserId)
+            ->where('title', $request->input('title'))
+            ->where('reminder_time', $request->input('reminder_time'))
+            ->where('active', true)
+            ->first();
+
+        if ($duplicate) {
+            return (new ReminderResource($duplicate))
+                ->response()
+                ->setStatusCode(200);
+        }
 
         $reminder = Reminder::create([
             'id' => (string) Str::uuid(),
-            'client_id' => $request->input('client_id') ?? (string) Str::uuid(),
+            'client_id' => $clientId ?? (string) Str::uuid(),
             'user_id' => $targetUserId,
             'created_by_user_id' => $user->id,
             'title' => $request->input('title'),

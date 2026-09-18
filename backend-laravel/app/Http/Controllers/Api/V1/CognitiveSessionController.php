@@ -28,10 +28,13 @@ class CognitiveSessionController extends Controller
 
     public function store(StoreCognitiveSessionRequest $request): JsonResponse
     {
+        $this->authorize('create', CognitiveSession::class);
+
         $user = $request->user();
         $validated = $request->validated();
+        $isInterrupted = ($validated['session_type'] ?? '') === 'interrupted' || !empty($validated['interrupted']);
 
-        $session = DB::transaction(function () use ($user, $validated) {
+        $session = DB::transaction(function () use ($user, $validated, $isInterrupted) {
             $session = CognitiveSession::firstOrCreate(
                 ['client_session_id' => $validated['client_session_id']],
                 [
@@ -39,18 +42,18 @@ class CognitiveSessionController extends Controller
                     'user_id' => $user->id,
                     'session_type' => $validated['session_type'] ?? 'five_game_continuous',
                     'started_at' => $validated['started_at'],
-                    'completed_at' => $validated['completed_at'] ?? now(),
-                    'overall_score' => $validated['overall_score'],
-                    'accuracy' => $validated['accuracy'],
-                    'avg_response_time_seconds' => $validated['avg_response_time_seconds'],
-                    'games_completed' => $validated['games_completed'],
-                    'game_order' => $validated['game_order'],
-                    'sync_status' => 'synced',
+                    'completed_at' => $isInterrupted ? null : ($validated['completed_at'] ?? now()),
+                    'overall_score' => $validated['overall_score'] ?? 0,
+                    'accuracy' => $validated['accuracy'] ?? 0.0,
+                    'avg_response_time_seconds' => $validated['avg_response_time_seconds'] ?? 0.0,
+                    'games_completed' => $validated['games_completed'] ?? 0,
+                    'game_order' => $validated['game_order'] ?? [],
+                    'sync_status' => $isInterrupted ? 'interrupted' : 'synced',
                 ]
             );
 
             if ($session->wasRecentlyCreated) {
-                foreach ($validated['results'] as $result) {
+                foreach ($validated['results'] ?? [] as $result) {
                     GameResult::create([
                         'id' => (string) Str::uuid(),
                         'cognitive_session_id' => $session->id,
@@ -64,7 +67,10 @@ class CognitiveSessionController extends Controller
                     ]);
                 }
 
-                event(new CognitiveSessionCompleted($session));
+                // Interrupted sessions do not recalculate longitudinal baselines to prevent skewing
+                if (!$isInterrupted) {
+                    event(new CognitiveSessionCompleted($session));
+                }
             }
 
             return $session;
