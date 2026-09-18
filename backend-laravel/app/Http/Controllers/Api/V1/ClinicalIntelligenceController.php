@@ -12,8 +12,10 @@ use Illuminate\Http\Request;
 
 class ClinicalIntelligenceController extends Controller
 {
-    public function __construct(protected ClinicalIntelligenceService $clinicalService)
-    {
+    public function __construct(
+        protected ClinicalIntelligenceService $clinicalService,
+        protected \App\Services\ClinicalReportAnalysisService $analysisService
+    ) {
     }
 
     public function analyze(AnalyzeClinicalReportRequest $request): JsonResponse
@@ -22,17 +24,77 @@ class ClinicalIntelligenceController extends Controller
             ? User::findOrFail($request->input('patient_id'))
             : $request->user();
 
+        $text = $request->input('report_text');
         $report = $this->clinicalService->storeReport(
             $targetUser,
             $request->user(),
             $request->input('title'),
-            $request->input('report_text')
+            $text
         );
+
+        $analysis = $this->analysisService->analyze($text, $targetUser);
 
         return response()->json([
             'message' => 'Report analyzed and structured successfully.',
             'report' => $report,
+            'plain_language_explanation' => $analysis['plain_language_summary'] ?? null,
+            'doctor_questions' => $analysis['doctor_questions'] ?? [],
+            'key_findings' => $analysis['key_findings'] ?? [],
+            'missing_information' => $analysis['missing_information'] ?? [],
+            'ai_status' => $analysis['status'] ?? 'fallback',
+            'clinical_disclaimer' => $analysis['clinical_disclaimer'] ?? 'Non-diagnostic.',
         ], 201);
+    }
+
+    /**
+     * Plain-language report explanation ("Explain this report").
+     */
+    public function explain(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'report_id' => ['nullable', 'uuid', 'exists:clinical_reports,id'],
+            'report_text' => ['nullable', 'string', 'max:50000'],
+            'locale' => ['nullable', 'string', 'max:10'],
+        ]);
+
+        $text = $validated['report_text'] ?? '';
+        if (empty($text) && !empty($validated['report_id'])) {
+            $report = ClinicalReport::findOrFail($validated['report_id']);
+            $text = $report->extracted_text ?? '';
+        }
+
+        if (empty(trim($text))) {
+            return response()->json(['message' => 'Report text or valid report_id is required.'], 422);
+        }
+
+        $result = $this->analysisService->explain($text);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Fact-based doctor question generator ("Questions for my doctor").
+     */
+    public function doctorQuestions(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'report_id' => ['nullable', 'uuid', 'exists:clinical_reports,id'],
+            'report_text' => ['nullable', 'string', 'max:50000'],
+        ]);
+
+        $text = $validated['report_text'] ?? '';
+        if (empty($text) && !empty($validated['report_id'])) {
+            $report = ClinicalReport::findOrFail($validated['report_id']);
+            $text = $report->extracted_text ?? '';
+        }
+
+        if (empty(trim($text))) {
+            return response()->json(['message' => 'Report text or valid report_id is required.'], 422);
+        }
+
+        $result = $this->analysisService->generateDoctorQuestions($text);
+
+        return response()->json($result);
     }
 
     /**

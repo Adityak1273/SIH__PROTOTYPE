@@ -6,8 +6,10 @@ use App\Rules\Engine\RuleEngine;
 use App\Rules\Services\AccessibilityRules;
 use App\Rules\Services\AuthRules;
 use App\Rules\Services\CaregiverRules;
+use App\Rules\Services\ClinicalReportRules;
 use App\Rules\Services\DifficultyRules;
 use App\Rules\Services\GameRules;
+use App\Rules\Services\NavigationRules;
 use App\Rules\Services\NotificationRules;
 use App\Rules\Services\ProfileRules;
 use App\Rules\Services\ReminderRules;
@@ -26,10 +28,11 @@ class RuleEngineServiceProvider extends ServiceProvider
                 auditService: $app->make(AuditLogService::class)
             );
 
-            // Register all 11 domain rule services
+            // Register all domain rule services
             $engine->registerRule(new AuthRules());
             $engine->registerRule(new ProfileRules());
             $engine->registerRule(new GameRules());
+            $engine->registerRule(new NavigationRules());
             $engine->registerRule(new DifficultyRules());
             $engine->registerRule(new VoiceRules());
             $engine->registerRule(new ReminderRules());
@@ -38,6 +41,7 @@ class RuleEngineServiceProvider extends ServiceProvider
             $engine->registerRule(new AccessibilityRules());
             $engine->registerRule(new CaregiverRules());
             $engine->registerRule(new NotificationRules());
+            $engine->registerRule(new ClinicalReportRules());
 
             return $engine;
         });
