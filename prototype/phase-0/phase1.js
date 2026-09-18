@@ -82,7 +82,10 @@
     $('#p1Close')?.addEventListener('click',closePanel); el.addEventListener('click',e=>{if(e.target===el)closePanel()});
   }
   const $ = (s) => document.querySelector(s);
-  function openPanel(kind){ addDrawer(); const c=$('#p1Content'), d=$('#p1Drawer'); if(!c||!d)return; d.hidden=false; c.innerHTML=renderPanel(kind); bindPanel(kind); }
+  function openPanel(kind){
+    if(kind==='settings' && typeof window.CCNERAuth?.openPatientSettings==='function') return window.CCNERAuth.openPatientSettings();
+    addDrawer(); const c=$('#p1Content'), d=$('#p1Drawer'); if(!c||!d)return; d.hidden=false; c.innerHTML=renderPanel(kind); bindPanel(kind);
+  }
   function closePanel(){ const d=$('#p1Drawer'); if(d)d.hidden=true; }
 
   function renderPanel(kind){
@@ -105,18 +108,21 @@
   }
 
   function renderCaregiver(){
-    const ss=sessions(), last=ss.at(-1), week=lastNDays(7), adherence=tasks.length?Math.round(tasks.filter(t=>t.completed).length/tasks.length*100):0;
-    const sessionsText=last?`${Math.round(last.score||0)}% score · ${Math.round((last.accuracy||0)*100)}% accuracy`:'No session completed yet';
-    const flags=[];
-    if(last && Number(last.accuracy||0)<.6) flags.push('Latest session accuracy was below 60%. Consider a gentle repeat, rest, and observation rather than a conclusion.');
-    if(!last) flags.push('No cognitive-training session recorded yet.');
-    if(!navigator.onLine) flags.push('Device is offline. Local changes are queued for later synchronization.');
-    return `<p class="eyebrow">CAREGIVER / HEALTH WORKER</p><h2>${esc(profile.name||'Participant')} dashboard</h2><p class="p1-muted">A monitoring view for training activity, routines and reminders. It is not a diagnostic dashboard.</p>
-      <div class="p1-grid"><div class="p1-card"><span>Latest session</span><strong>${last?Math.round(last.score||0)+'%':'—'}</strong><div class="p1-row-sub">${esc(sessionsText)}</div></div><div class="p1-card"><span>7-day sessions</span><strong>${week.length}</strong></div><div class="p1-card"><span>Task adherence</span><strong>${adherence}%</strong></div><div class="p1-card"><span>Pending sync</span><strong>${syncQueue.filter(x=>x.status==='pending').length}</strong></div></div>
-      <div class="p1-report"><h3>What needs attention?</h3>${flags.length?flags.map(x=>`<div class="p1-insight">${esc(x)}</div>`).join(''):'<div class="p1-insight">No immediate demo alerts. Keep routines calm and consistent.</div>'}</div>
-      <div class="p1-report"><h3>Today’s routine</h3>${renderTaskRows(true)}</div>
-      <div class="p1-report"><h3>Recent reminders</h3>${renderReminderRows(true)}</div>
-      <div class="p1-actions"><button class="p1-btn primary" data-p1="report">Open report</button><button class="p1-btn" data-p1="export">Export data</button></div>`;
+    const prof = window.CCNERAuth?.getProfile?.() || profile;
+    const cgName = prof.caregiver_info?.caregiver_name || prof.caregiverName || 'Pooja Sharma';
+    const cgRel = prof.caregiver_info?.relationship || 'Daughter';
+    const cgPhone = prof.caregiver_info?.caregiver_phone || prof.emergency_contact || '9876543211';
+    return `<p class="eyebrow">SUPPORT & CONTACT</p><h2>Caregiver & Emergency Contact</h2><p class="p1-muted">Your primary contact details. In case of an emergency, call your designated caregiver below.</p>
+      <div class="p1-report">
+        <h3>Primary Caregiver</h3>
+        <p><strong>Name:</strong> ${esc(cgName)} (${esc(cgRel)})</p>
+        <p><strong>Emergency Phone:</strong> <a href="tel:${esc(cgPhone)}" style="color:#235c3b;font-weight:bold;font-size:1.15rem">${esc(cgPhone)}</a></p>
+        <div class="p1-actions"><a class="p1-btn primary" href="tel:${esc(cgPhone)}">📞 Call Caregiver</a></div>
+      </div>
+      <div class="p1-report">
+        <h3>Family & Daily Notes</h3>
+        <p class="p1-muted">${esc(prof.caregiver_info?.family_notes || 'Morning sessions preferred. Momo voice set to gentle speed.')}</p>
+      </div>`;
   }
 
   function renderReminders(){

@@ -71,17 +71,169 @@ class ClinicalIntelligenceService
         ];
     }
 
-    public function storeReport(User $patient, ?User $creator, string $title, string $text): ClinicalReport
+    /**
+     * Deterministic extraction of candidate conditions, medications, and allergies.
+     * All items are flagged as candidates requiring explicit user confirmation before profile storage.
+     */
+    public function extractEntities(string $text): array
+    {
+        $lower = mb_strtolower($text);
+
+        // Candidate conditions
+        $conditionPatterns = [
+            'Asthma' => ['\basthma\b', '\bbronchial asthma\b'],
+            'Hypertension' => ['\bhypertension\b', '\bhigh blood pressure\b', '\bhtn\b'],
+            'Type 2 Diabetes' => ['\bdiabetes\b', '\bt2dm\b', '\bdiabetic\b', '\bblood sugar\b'],
+            'Mild Cognitive Impairment' => ['\bmci\b', '\bmild cognitive impairment\b', '\bcognitive decline\b'],
+            'Arthritis' => ['\barthritis\b', '\bosteoarthritis\b', '\brheumatoid\b'],
+            'Insomnia' => ['\binsomnia\b', '\bsleep disturbance\b', '\bpoor sleep\b'],
+            'Stroke' => ['\bstroke\b', '\btia\b', '\btransient ischemic\b'],
+            'Hearing Loss' => ['\bhearing loss\b', '\bhearing difficulty\b', '\bdeafness\b'],
+            'Visual Impairment' => ['\bcataract\b', '\bglaucoma\b', '\bvisual impairment\b', '\bblurry vision\b'],
+        ];
+
+        $foundConditions = [];
+        foreach ($conditionPatterns as $label => $patterns) {
+            foreach ($patterns as $pattern) {
+                if (preg_match('/' . $pattern . '/i', $text)) {
+                    $foundConditions[] = $label;
+                    break;
+                }
+            }
+        }
+
+        // Candidate medications (common neuro, cardio, general)
+        $medicationPatterns = [
+            'Donepezil' => '\bdonepezil\b(?:\s+\d+(?:mg)?)?',
+            'Memantine' => '\bmemantine\b(?:\s+\d+(?:mg)?)?',
+            'Rivastigmine' => '\brivastigmine\b(?:\s+\d+(?:mg)?)?',
+            'Amlodipine' => '\bamlodipine\b(?:\s+\d+(?:mg)?)?',
+            'Metformin' => '\bmetformin\b(?:\s+\d+(?:mg)?)?',
+            'Atorvastatin' => '\batorvastatin\b(?:\s+\d+(?:mg)?)?',
+            'Levothyroxine' => '\blevothyroxine\b(?:\s+\d+(?:mcg|mg)?)?',
+            'Aspirin' => '\baspirin\b(?:\s+\d+(?:mg)?)?',
+            'Paracetamol' => '\bparacetamol\b(?:\s+\d+(?:mg)?)?',
+            'Losartan' => '\blosartan\b(?:\s+\d+(?:mg)?)?',
+            'Pantoprazole' => '\bpantoprazole\b(?:\s+\d+(?:mg)?)?',
+        ];
+
+        $foundMedications = [];
+        foreach ($medicationPatterns as $label => $pattern) {
+            if (preg_match('/' . $pattern . '/i', $text, $match)) {
+                $foundMedications[] = ucfirst(trim($match[0]));
+            }
+        }
+
+        // Candidate allergies
+        $allergyPatterns = [
+            'Penicillin' => '\bpenicillin\b',
+            'Sulfa drugs' => '\bsulfa\b|\bsulfonamide\b',
+            'Aspirin allergy' => '\baspirin allergy\b',
+            'Latex' => '\blatex\b',
+            'Peanuts' => '\bpeanut(?:s)?\b',
+            'Dust / Pollen' => '\bpollen\b|\bdust allergy\b',
+        ];
+
+        $foundAllergies = [];
+        foreach ($allergyPatterns as $label => $pattern) {
+            if (preg_match('/' . $pattern . '/i', $text)) {
+                $foundAllergies[] = $label;
+            }
+        }
+
+        return [
+            'conditions' => array_values(array_unique($foundConditions)),
+            'medications' => array_values(array_unique($foundMedications)),
+            'allergies' => array_values(array_unique($foundAllergies)),
+        ];
+    }
+
+    public function storeReport(User $patient, ?User $creator, string $title, string $text, string $sourceType = 'text', ?string $filename = null): ClinicalReport
     {
         $analysis = $this->analyzeText($text);
+        $extractedEntities = $this->extractEntities($text);
 
         return ClinicalReport::create([
             'id' => (string) Str::uuid(),
             'user_id' => $patient->id,
             'created_by_user_id' => $creator?->id,
             'report_title' => $title,
-            'source_type' => 'text',
+            'original_filename' => $filename,
+            'source_type' => $sourceType,
+            'source_attribution' => $sourceType,
+            'extracted_text' => $text,
             'analysis' => $analysis,
+            'extracted_entities' => $extractedEntities,
+            'confirmed_entities' => [],
+            'confirmation_status' => 'pending_confirmation',
+            'report_date' => now()->toDateString(),
         ]);
+    }
+
+    /**
+     * Confirms or edits extracted candidate entities and syncs confirmed items into the patient profile.
+     */
+    public function confirmEntities(ClinicalReport $report, array $decisions): array
+    {
+        $confirmed = [
+            'conditions' => [],
+            'medications' => [],
+            'allergies' => [],
+        ];
+
+        foreach ($decisions as $decision) {
+            $type = $decision['entity_type'] ?? '';
+            $status = $decision['status'] ?? 'ignored'; // 'confirmed', 'edited', 'ignored'
+            $finalValue = trim($decision['final_value'] ?? $decision['original_value'] ?? '');
+
+            if (in_array($status, ['confirmed', 'edited']) && !empty($finalValue) && isset($confirmed[$type])) {
+                $confirmed[$type][] = [
+                    'name' => $finalValue,
+                    'status' => $status,
+                    'source' => $report->source_attribution ?? 'doctor_report',
+                    'confirmed_at' => now()->toIso8601String(),
+                ];
+            }
+        }
+
+        $report->update([
+            'confirmed_entities' => $confirmed,
+            'confirmation_status' => 'confirmed',
+        ]);
+
+        // Merge into patient profile health_background
+        $patient = $report->user;
+        if ($patient && $patient->profile) {
+            $profile = $patient->profile;
+            $health = $profile->health_background ?? [];
+
+            $existingConditions = $health['known_conditions'] ?? [];
+            $existingMeds = $health['medications'] ?? [];
+            $existingAllergies = $health['allergies'] ?? [];
+
+            foreach ($confirmed['conditions'] as $item) {
+                if (!in_array($item['name'], $existingConditions)) {
+                    $existingConditions[] = $item['name'];
+                }
+            }
+            foreach ($confirmed['medications'] as $item) {
+                if (!in_array($item['name'], $existingMeds)) {
+                    $existingMeds[] = $item['name'];
+                }
+            }
+            foreach ($confirmed['allergies'] as $item) {
+                if (!in_array($item['name'], $existingAllergies)) {
+                    $existingAllergies[] = $item['name'];
+                }
+            }
+
+            $health['known_conditions'] = $existingConditions;
+            $health['medications'] = $existingMeds;
+            $health['allergies'] = $existingAllergies;
+
+            $profile->update(['health_background' => $health]);
+        }
+
+        return $confirmed;
     }
 }

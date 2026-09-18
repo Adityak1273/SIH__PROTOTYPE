@@ -15,14 +15,24 @@ class ClinicalReport extends Model
         'user_id',
         'created_by_user_id',
         'report_title',
+        'original_filename',
         'source_type',
+        'extracted_text',
         'analysis',
+        'extracted_entities',
+        'confirmed_entities',
+        'confirmation_status',
+        'source_attribution',
+        'report_date',
     ];
 
     protected function casts(): array
     {
         return [
             'analysis' => 'array',
+            'extracted_entities' => 'array',
+            'confirmed_entities' => 'array',
+            'report_date' => 'date',
         ];
     }
 

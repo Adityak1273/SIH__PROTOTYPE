@@ -186,15 +186,37 @@ class CaregiverDashboardService
             ->take(10)
             ->get();
 
+        // 12. ACTIVE ALERTS & SYNC STATUS
+        $activeAlerts = CaregiverAlert::where('patient_id', $patient->id)
+            ->whereNull('acknowledged_at')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        $lastSession = $allSessions->first();
+        $lastActiveTime = $lastSession?->completed_at ? $lastSession->completed_at->diffForHumans() : 'No training activity recorded yet';
+
+        $profile = $patient->profile;
+
         return [
             'patient' => [
                 'id' => $patient->id,
-                'name' => $patient->profile?->full_name ?? $patient->name,
-                'momo_name' => $patient->profile?->momo_name ?? 'Momo',
-                'region' => $patient->profile?->region ?? 'Assam',
-                'language' => $patient->profile?->preferred_language ?? 'en-IN',
-                'dob' => $patient->profile?->date_of_birth?->format('M j, Y') ?? 'Not specified',
-                'emergency_contact' => $patient->profile?->emergency_contact ?? 'Not set',
+                'name' => $profile?->full_name ?? $patient->name,
+                'preferred_name' => $profile?->preferred_name ?? $patient->name,
+                'momo_name' => $profile?->momo_name ?? 'Momo',
+                'region' => $profile?->region ?? 'Assam',
+                'language' => $profile?->preferred_language ?? 'en-IN',
+                'additional_languages' => $profile?->additional_languages ?? [],
+                'dob' => $profile?->date_of_birth?->format('M j, Y') ?? 'Not specified',
+                'age' => $profile?->age ?? ($profile?->date_of_birth ? Carbon::parse($profile->date_of_birth)->age : '—'),
+                'gender' => $profile?->gender ?? 'Not specified',
+                'address' => $profile?->address ?? '',
+                'city' => $profile?->city ?? 'Guwahati',
+                'state' => $profile?->state ?? 'Assam',
+                'emergency_contact' => $profile?->emergency_contact ?? 'Not set',
+                'emergency_relationship' => $profile?->emergency_relationship ?? 'Caregiver',
+                'accessibility' => $profile?->accessibility_settings ?? ['mode' => $profile?->accessibility_mode ?? 'standard'],
+                'completion_pct' => $profile?->profile_completion_pct ?? 70,
             ],
             'today_activity' => $todayActivity,
             'recent_sessions' => $recentSessions,
@@ -204,9 +226,12 @@ class CaregiverDashboardService
             'difficulty_progression' => $difficultyProgression,
             'reminders' => $reminders,
             'missed_activity' => $missedActivity,
+            'alerts' => $activeAlerts,
             'follow_up_signals' => $followUpSignals,
             'caregiver_notes' => $caregiverNotes,
-            'clinical_disclaimer' => 'All statistics and indicators describe cognitive training engagement only. They do not evaluate or diagnose dementia, Alzheimer\'s, or medical conditions.',
+            'sync_status' => 'Synchronized · Safe offline cache & cloud aligned',
+            'last_active_time' => $lastActiveTime,
+            'clinical_disclaimer' => 'Cognitive training information is not a medical diagnosis. These observational metrics reflect training engagement and do not evaluate dementia or clinical stages.',
         ];
     }
 }

@@ -3,7 +3,7 @@
 'use strict';if(window.__ccnerCoreBoot)return;window.__ccnerCoreBoot=true;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const app=document.querySelector('.app-shell');if(app)app.style.display='none';
-function loadAuth(){if(window.__CCNER_AUTH_LOADED)return;window.__CCNER_AUTH_LOADED=true;const css=document.createElement('link');css.rel='stylesheet';css.href='./level2-auth-v2.css?v=0.18.15';document.head.appendChild(css);const s=document.createElement('script');s.src='./level2-auth-v2.js?v=0.18.15';s.defer=true;document.head.appendChild(s)}
+function loadAuth(){if(window.__CCNER_AUTH_LOADED)return;window.__CCNER_AUTH_LOADED=true;const css=document.createElement('link');css.rel='stylesheet';css.href='./level2-auth-v2.css?v=0.21.0';document.head.appendChild(css);const s=document.createElement('script');s.src='./level2-auth-v2.js?v=0.21.0';s.defer=true;document.head.appendChild(s)}
 function loadSecurity(){if(window.__CCNER_SECURITY_LOADED)return;window.__CCNER_SECURITY_LOADED=true;const s=document.createElement('script');s.src='./security-center.js?v=0.19.1';s.defer=true;document.head.appendChild(s)}
 function loadAdmin(){if(window.__CCNER_ADMIN_LOADED)return;window.__CCNER_ADMIN_LOADED=true;const css=document.createElement('link');css.rel='stylesheet';css.href='./admin-access.css?v=0.18.15';document.head.appendChild(css);const s=document.createElement('script');s.src='./admin-access.js?v=0.18.15';s.defer=true;document.head.appendChild(s)}
 function loadAuthRecovery(){if(window.__CCNER_AUTH_RECOVERY_LOADED)return;window.__CCNER_AUTH_RECOVERY_LOADED=true;const s=document.createElement('script');s.src='./auth-recovery.js?v=0.18.15';s.defer=true;document.head.appendChild(s)}

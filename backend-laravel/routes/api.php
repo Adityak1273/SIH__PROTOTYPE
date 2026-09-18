@@ -48,6 +48,8 @@ Route::prefix('v1')->group(function () {
 
             // Clinical Intelligence & Report Structuring
             Route::post('/clinical/analyze', [ClinicalIntelligenceController::class, 'analyze']);
+            Route::post('/clinical/intake', [ClinicalIntelligenceController::class, 'intakeReport']);
+            Route::post('/clinical/confirm', [ClinicalIntelligenceController::class, 'confirmEntities']);
             Route::get('/clinical/profile', [ClinicalIntelligenceController::class, 'getProfile']);
         });
 
