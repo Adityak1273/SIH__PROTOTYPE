@@ -5,7 +5,7 @@
   const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{"runs":[]}')}catch(_){return{runs:[]}}};
   const save=v=>localStorage.setItem(KEY,JSON.stringify(v));
   let active=null;
-  const tasks=[['home_start','Start today’s cognitive session'],['reminders_open','Open Reminders'],['reminder_add','Create a reminder'],['progress_open','Open Progress'],['language_change','Change preferred language'],['voice_start','Use Talk to Momo'],['game_exit','Exit a game safely']];
+  const tasks=[['home_start','Start today’s cognitive session'],['reminders_open','Open Reminders'],['reminder_add','Create a reminder'],['progress_open','Open Progress'],['language_change','Change preferred language'],['voice_start','Use Talk to Mimo'],['game_exit','Exit a game safely']];
   function begin(){active={id:crypto.randomUUID(),startedAt:Date.now(),tasks:tasks.map(([id,label])=>({id,label,status:'not_started',startedAt:null,completedAt:null,errors:0})),errors:0,notes:[]};const s=read();s.runs.unshift(active);s.runs=s.runs.slice(0,20);save(s);render()}
   function complete(id){if(!active)return;const t=active.tasks.find(x=>x.id===id);if(!t)return;if(!t.startedAt)t.startedAt=Date.now();t.status='completed';t.completedAt=Date.now();save(read());}
   function error(id){if(!active)return;const t=active.tasks.find(x=>x.id===id);if(t)t.errors++;active.errors++;save(read())}

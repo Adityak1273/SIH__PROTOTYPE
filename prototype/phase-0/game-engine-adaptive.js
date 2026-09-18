@@ -141,7 +141,7 @@
     const g=GAMES[key];
     document.body.classList.add('ccner-adaptive-v4');
     setText('#gameCategory',g.category);setText('#gameTitle',g.title);setText('#gamePrompt',g.intro);
-    setText('#gameMomoText',`Adaptive practice · Difficulty ${sessionDifficulty(key)}/10`);
+    setText('#gameMimoText',`Adaptive practice · Difficulty ${sessionDifficulty(key)}/10`);
     const meta=$('#gameArea');
     if(meta && !$('#v4meta')) meta.insertAdjacentHTML('beforebegin',`<div id="v4meta" class="v4-meta"><span class="v4-ai">AI-adaptive training</span><span id="v4difficulty">Difficulty ${sessionDifficulty(key)}/10</span><span id="v4count"></span></div>`);
   }

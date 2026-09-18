@@ -117,7 +117,7 @@
         <div class="l2v-brand">
           <div class="puppy">🐶</div>
           <h1>Cognitive Care NER</h1>
-          <p>Elderly-friendly cognitive support with Momo companion</p>
+          <p>Elderly-friendly cognitive support with Mimo companion</p>
         </div>
 
         <div class="l2v-card">
@@ -148,7 +148,7 @@
             <div id="l2vSignupRoleBox" class="l2v-field" style="display:none">
               <label for="l2vRoleSelect">Account Type</label>
               <select id="l2vRoleSelect">
-                <option value="patient">Patient (Elderly-friendly training with Momo)</option>
+                <option value="patient">Patient (Elderly-friendly training with Mimo)</option>
                 <option value="caregiver">Caregiver (Monitoring & Routine Support)</option>
               </select>
             </div>
@@ -305,7 +305,7 @@
           <!-- STEP 5: Daily-Life / Cognitive Background (Optional) -->
           <section class="l2v-step" data-step="5">
             <h2>Daily Life & Familiar Routines (Optional)</h2>
-            <p class="hint">Helps Momo personalize conversations and select meaningful game themes.</p>
+            <p class="hint">Helps Mimo personalize conversations and select meaningful game themes.</p>
             <div class="l2v-grid">
               <div class="l2v-field">
                 <label for="l2vHobbies">Hobbies & Interests</label>
@@ -317,7 +317,7 @@
               </div>
               <div class="l2v-field" style="grid-column: 1 / -1">
                 <label for="l2vRoutine">Daily Routine Summary</label>
-                <textarea id="l2vRoutine" placeholder="e.g. Morning walk, morning tea, 10am cognitive games with Momo."></textarea>
+                <textarea id="l2vRoutine" placeholder="e.g. Morning walk, morning tea, 10am cognitive games with Mimo."></textarea>
               </div>
             </div>
             <div class="l2v-actions">
@@ -341,7 +341,7 @@
                 </select>
               </div>
               <div class="l2v-field">
-                <label for="l2vVoiceSpeed">Momo Voice Speed</label>
+                <label for="l2vVoiceSpeed">Mimo Voice Speed</label>
                 <select id="l2vVoiceSpeed">
                   <option value="0.85">Gentle / Slower (0.85x)</option>
                   <option value="1.0" selected>Standard (1.0x)</option>
@@ -382,8 +382,8 @@
                 <span><strong>Caregiver Sharing:</strong> Allow linked caregivers to view training activity, reminders, and safety alerts.</span>
               </label>
               <label>
-                <input id="l2vMomoExplain" type="checkbox" checked>
-                <span><strong>Momo AI Companion:</strong> Momo receives only minimal conversational context (name and game type). AI never diagnoses conditions or changes permissions.</span>
+                <input id="l2vMimoExplain" type="checkbox" checked>
+                <span><strong>Mimo AI Companion:</strong> Mimo receives only minimal conversational context (name and game type). AI never diagnoses conditions or changes permissions.</span>
               </label>
             </div>
             <div class="l2v-actions">
@@ -497,7 +497,7 @@
       privacy_preferences: {
         consent_status: document.getElementById('l2vCoreConsent')?.checked ?? true,
         caregiver_sharing: document.getElementById('l2vCgSharing')?.checked ?? true,
-        momo_consent: document.getElementById('l2vMomoExplain')?.checked ?? true,
+        momo_consent: document.getElementById('l2vMimoExplain')?.checked ?? true,
       },
       onboarding_step: currentStep,
     };
@@ -652,7 +652,7 @@
     }
   }
 
-  // 1. PATIENT DASHBOARD EXPERIENCE (Elderly-Friendly, Momo Rig, No Caregiver Controls)
+  // 1. PATIENT DASHBOARD EXPERIENCE (Elderly-Friendly, Mimo Rig, No Caregiver Controls)
   function renderPatientDashboard() {
     // Hide caregiver dashboard if present
     const cgView = document.getElementById('caregiverDashboardView');
@@ -672,7 +672,7 @@
     // Update greeting with patient preferred name
     const greeting = document.querySelector('.subtitle');
     if (greeting && currentProfile?.preferred_name) {
-      greeting.textContent = `Welcome back, ${currentProfile.preferred_name}! Your friendly workout with Momo.`;
+      greeting.textContent = `Welcome back, ${currentProfile.preferred_name}! Your friendly workout with Mimo.`;
     }
 
     // Attach Settings Handlers

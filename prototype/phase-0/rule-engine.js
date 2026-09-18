@@ -118,7 +118,7 @@
       case 'AI_SAFETY_CHECK':{
         const text=String(payload.text||'').toLowerCase();
         if(/\b(dementia|alzheimer|alzheimers|clinical stage|cognitive deficit|diagnosis)\b/i.test(text)){
-          return record(event,{allowed:false,rule:'AI-003',reason:'NON_DIAGNOSTIC_GUARD',fallback:'I am Momo, your cognitive practice companion. I do not provide medical or dementia diagnoses.'});
+          return record(event,{allowed:false,rule:'AI-003',reason:'NON_DIAGNOSTIC_GUARD',fallback:'I am Mimo, your cognitive practice companion. I do not provide medical or dementia diagnoses.'});
         }
         if(payload.apiKeyConfigured===false){
           return record(event,{allowed:false,rule:'AI-002',fallback:'AI report analysis is not configured.'});

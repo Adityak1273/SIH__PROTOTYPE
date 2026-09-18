@@ -1,4 +1,4 @@
-/* Momo voice-mode control: Continuous or Manual. */
+/* Mimo voice-mode control: Continuous or Manual. */
 (() => {
   'use strict';
   if (window.__CCNER_VOICE_MODE_CONTROLLER__) return;
@@ -20,9 +20,9 @@
       const pressed=String(active);if(btn.getAttribute('aria-pressed')!==pressed)btn.setAttribute('aria-pressed',pressed);
     });
     const mic=document.querySelector('#l3VoiceBtn');
-    if(mic){const title=mode==='manual'?'Tap to talk to Momo':'Talk to Momo';if(mic.title!==title)mic.title=title;if(mic.getAttribute('aria-label')!==title)mic.setAttribute('aria-label',title)}
+    if(mic){const title=mode==='manual'?'Tap to talk to Mimo':'Talk to Mimo';if(mic.title!==title)mic.title=title;if(mic.getAttribute('aria-label')!==title)mic.setAttribute('aria-label',title)}
   }
-  function updateVoicePrompt(){const p=document.querySelector('#l3VoiceBox p');if(!p)return;const text=getMode()==='manual'?'Manual mode: tap the microphone each time you want to speak to Momo.':'Continuous mode: after Momo replies, he listens again automatically.';if(p.textContent!==text)p.textContent=text}
+  function updateVoicePrompt(){const p=document.querySelector('#l3VoiceBox p');if(!p)return;const text=getMode()==='manual'?'Manual mode: tap the microphone each time you want to speak to Mimo.':'Continuous mode: after Mimo replies, he listens again automatically.';if(p.textContent!==text)p.textContent=text}
   function stopManual(){const r=manualRecognition;manualRecognition=null;manualListening=false;try{r?.stop()}catch(_) {}}
   function setMode(mode){
     const value=mode==='manual'?'manual':'continuous';localStorage.setItem(KEY,value);document.documentElement.dataset.ccnerVoiceMode=value;
@@ -51,7 +51,7 @@
   }
   function ensureSettingsControl(){
     const row=findVoiceRow();if(!row||row.querySelector('.ccner-voice-mode-control'))return;
-    const control=document.createElement('div');control.className='ccner-voice-mode-control';control.setAttribute('aria-label','Momo voice mode');
+    const control=document.createElement('div');control.className='ccner-voice-mode-control';control.setAttribute('aria-label','Mimo voice mode');
     control.innerHTML='<button type="button" data-ccner-voice="continuous" aria-pressed="false">Continuous</button><button type="button" data-ccner-voice="manual" aria-pressed="false">Manual</button>';
     const oldValue=[...row.querySelectorAll('*')].find(el=>el.children.length===0&&['Continuous','Manual'].includes(el.textContent.trim()));
     if(oldValue&&oldValue.tagName!=='BUTTON')oldValue.replaceWith(control);else row.appendChild(control);

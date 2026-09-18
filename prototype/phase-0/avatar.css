@@ -1,4 +1,4 @@
-/* Momo — cute, friendly puppy companion. Original CSS character, designed for a warm elderly-friendly app. */
+/* Mimo — cute, friendly puppy companion. Original CSS character, designed for a warm elderly-friendly app. */
 .momo-rig{position:relative;z-index:6;width:340px;height:360px;transform-origin:50% 86%;filter:drop-shadow(0 18px 12px rgba(92,58,40,.13));animation:momoIdle 3.4s ease-in-out infinite;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
 .momo-shadow{position:absolute;left:60px;bottom:8px;width:220px;height:34px;border-radius:50%;background:rgba(86,60,45,.13);filter:blur(8px);transition:transform .45s,opacity .45s}
 .momo-tail{position:absolute;right:3px;bottom:56px;width:100px;height:130px;border:17px solid #c98a54;border-left-color:transparent;border-bottom-color:transparent;border-radius:55%;transform:rotate(18deg);transform-origin:25% 85%;animation:momoTail 2.8s ease-in-out infinite;z-index:1}

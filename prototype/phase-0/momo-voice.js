@@ -1,4 +1,4 @@
-/* Momo voice profile
+/* Mimo voice profile
  * Uses the device/browser TTS engine, tuned for a calm, clear, warm female-presenting
  * delivery inspired by the supplied reference sample. This does NOT clone the source speaker.
  */
@@ -36,11 +36,11 @@
     return getVoices().slice().sort((a,b) => scoreVoice(b) - scoreVoice(a))[0] || null;
   }
 
-  window.CCNERMomoVoice = {
+  window.CCNERMimoVoice = {
     profile: { ...profile },
     getVoice: chooseVoice,
     getVoices,
-    test(text = 'Hello. I am Momo. I am here with you. Take your time. We can do this together.') {
+    test(text = 'Hello. I am Mimo. I am here with you. Take your time. We can do this together.') {
       const synth = window.speechSynthesis;
       if (!synth || typeof window.SpeechSynthesisUtterance !== 'function') return false;
       synth.cancel();
@@ -56,12 +56,12 @@
     }
   };
 
-  // app.js creates every Momo utterance through speechSynthesis.speak().
+  // app.js creates every Mimo utterance through speechSynthesis.speak().
   // Intercept that final call so the profile is applied consistently without
   // changing the game's scoring, recognition, or AI logic.
   const install = () => {
     const synth = window.speechSynthesis;
-    if (!synth || synth.__ccnerMomoVoicePatched) return;
+    if (!synth || synth.__ccnerMimoVoicePatched) return;
     const originalSpeak = synth.speak.bind(synth);
     synth.speak = (utterance) => {
       try {
@@ -74,7 +74,7 @@
       } catch (_) {}
       return originalSpeak(utterance);
     };
-    synth.__ccnerMomoVoicePatched = true;
+    synth.__ccnerMimoVoicePatched = true;
   };
 
   install();

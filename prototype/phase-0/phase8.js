@@ -74,7 +74,7 @@
 
   function ensureGameShell(){
     const card=$('.game-card'); if(!card) return;
-    if(!document.querySelector('.p8-training-banner')) card.insertAdjacentHTML('beforebegin','<div class="p8-training-banner">🎓 Guided training mode · Momo explains every game before you play</div>');
+    if(!document.querySelector('.p8-training-banner')) card.insertAdjacentHTML('beforebegin','<div class="p8-training-banner">🎓 Guided training mode · Mimo explains every game before you play</div>');
   }
 
   function startSession(){
@@ -92,7 +92,7 @@
     state.current={key,level,rounds:3,correct:0,attempts:0,totalTime:0}; state.round=0; state.roundResults=[];
     setText('#gameCategory',meta.area); setText('#gameTitle',meta.name); setText('#gameCounter',`${state.gameIndex+1} of 5`);
     const bar=$('#progressBar'); if(bar)bar.style.width=`${state.gameIndex/5*100}%`;
-    setText('#gamePrompt',meta.how); setText('#gameMomoText',`Training level: ${levelLabel(level)} · ${meta.what}`); setText('#gameFeedback','');
+    setText('#gamePrompt',meta.how); setText('#gameMimoText',`Training level: ${levelLabel(level)} · ${meta.what}`); setText('#gameFeedback','');
     renderTrainingCard(meta,level);
     speak(meta.voice);
     setTimeout(()=>{ if(state.active) beginRound(); },1200);
@@ -100,7 +100,7 @@
 
   function renderTrainingCard(meta,level){
     const area=gameContainer(); if(!area)return;
-    area.innerHTML=`<section class="p8-training"><h3>${meta.icon} ${esc(meta.name)}</h3><p><strong>What it trains:</strong> ${esc(meta.what)}</p><div class="p8-meta"><span class="p8-pill">🎚️ ${levelLabel(level)}</span><span class="p8-pill">🔁 3 short rounds</span><span class="p8-pill">🧓 Training only · not diagnosis</span></div><div class="p8-how"><div class="p8-step"><strong>1 · Look</strong><span>Follow Momo's voice and look at the screen.</span></div><div class="p8-step"><strong>2 · Think</strong><span>Take your time. You can pause between rounds.</span></div><div class="p8-step"><strong>3 · Tap</strong><span>Choose the answer with the large buttons.</span></div></div><div class="p8-game-actions"><button class="p8-primary" id="p8BeginNow" type="button">▶ Start this game</button></div></section>`;
+    area.innerHTML=`<section class="p8-training"><h3>${meta.icon} ${esc(meta.name)}</h3><p><strong>What it trains:</strong> ${esc(meta.what)}</p><div class="p8-meta"><span class="p8-pill">🎚️ ${levelLabel(level)}</span><span class="p8-pill">🔁 3 short rounds</span><span class="p8-pill">🧓 Training only · not diagnosis</span></div><div class="p8-how"><div class="p8-step"><strong>1 · Look</strong><span>Follow Mimo's voice and look at the screen.</span></div><div class="p8-step"><strong>2 · Think</strong><span>Take your time. You can pause between rounds.</span></div><div class="p8-step"><strong>3 · Tap</strong><span>Choose the answer with the large buttons.</span></div></div><div class="p8-game-actions"><button class="p8-primary" id="p8BeginNow" type="button">▶ Start this game</button></div></section>`;
     $('#p8BeginNow')?.addEventListener('click',()=>beginRound(true));
   }
 
@@ -179,7 +179,7 @@
     const history=read(HISTORY,[]); history.push(session); write(HISTORY,history.slice(-30));
     const trend=performanceTrend(history);
     renderFinalResults(session,trend); setText('#todayStatus','Complete');
-    speak(session.score>=80?'Wonderful work! You completed all five games. Momo is very proud of you.':'You completed all five games. Every small practice session counts.');
+    speak(session.score>=80?'Wonderful work! You completed all five games. Mimo is very proud of you.':'You completed all five games. Every small practice session counts.');
   }
 
   function performanceTrend(history){

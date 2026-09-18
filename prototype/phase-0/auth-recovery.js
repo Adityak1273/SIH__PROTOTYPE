@@ -3,7 +3,7 @@
 'use strict';
 if(window.__CCNER_AUTH_RECOVERY__)return;window.__CCNER_AUTH_RECOVERY__=true;
 const DEMO_USER={id:'00000000-0000-4000-8000-000000000001',email:'demo@cognitivecare.local'};
-const DEMO_PROFILE={user_id:DEMO_USER.id,full_name:'Demo Patient',display_name:'Demo Patient',preferred_language:'en',role:'patient',requested_role:'patient',momo_name:'Momo',voice_preference:'default',region:'North Eastern Region',accessibility:'Large text',profile_complete:true};
+const DEMO_PROFILE={user_id:DEMO_USER.id,full_name:'Demo Patient',display_name:'Demo Patient',preferred_language:'en',role:'patient',requested_role:'patient',momo_name:'Mimo',voice_preference:'default',region:'North Eastern Region',accessibility:'Large text',profile_complete:true};
 const $=s=>document.querySelector(s);
 function demo(){
   const gate=$('#l2AuthGate');if(!gate)return;

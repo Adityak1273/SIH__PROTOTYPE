@@ -1,4 +1,4 @@
-/* Cognitive Care NER — Laravel Backend Sync & Momo Gateway Bridge.
+/* Cognitive Care NER — Laravel Backend Sync & Mimo Gateway Bridge.
  * Connects the offline-first web shell / Capacitor Android app to the Laravel API.
  */
 (function() {
@@ -81,8 +81,8 @@
         flushOutbox();
     });
 
-    // Wire up Momo AI Gateway with Laravel proxy
-    window.ccnerChatWithMomo = async function(message, history = [], screen = 'homeView', game = 'none', level = 1) {
+    // Wire up Mimo AI Gateway with Laravel proxy
+    window.ccnerChatWithMimo = async function(message, history = [], screen = 'homeView', game = 'none', level = 1) {
         const token = getAuthToken();
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -93,7 +93,7 @@
                 headers,
                 body: JSON.stringify({ message, history, screen, game, level }),
             });
-            if (!r.ok) throw new Error('Momo Gateway error');
+            if (!r.ok) throw new Error('Mimo Gateway error');
             const data = await r.json();
             return data.reply;
         } catch (e) {

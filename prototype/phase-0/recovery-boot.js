@@ -12,7 +12,7 @@
       box.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:2147483647;background:#fff8e8;border:2px solid #d89b32;border-radius:14px;padding:14px 16px;font:600 15px/1.4 system-ui,sans-serif;color:#4b3520;box-shadow:0 8px 30px rgba(0,0,0,.18)';
       document.body.appendChild(box);
     }
-    box.textContent='Momo startup check: '+message;
+    box.textContent='Mimo startup check: '+message;
   }
   window.addEventListener('error',e=>report('JavaScript error: '+(e.message||'unknown error')));
   window.addEventListener('unhandledrejection',e=>report('Startup promise error: '+(e.reason?.message||String(e.reason||'unknown error'))));

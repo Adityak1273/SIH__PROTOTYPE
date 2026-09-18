@@ -70,7 +70,7 @@
     if(tutorialOpen||exitModalOpen)return;
     const info=INFO[title]; if(!info)return;
     tutorialOpen=true; stopVoice();
-    const e=modal(`<div class="ccner-l4-dialog" role="dialog" aria-modal="true"><div class="ccner-l4-momo">🐶</div><small>MOMO</small><h2>${t('ask')}</h2><div class="ccner-l4-row"><button id="ccnerL4Yes" class="ccner-l4-primary">${t('yes')}</button><button id="ccnerL4No" class="ccner-l4-secondary">${t('no')}</button></div></div>`);
+    const e=modal(`<div class="ccner-l4-dialog" role="dialog" aria-modal="true"><div class="ccner-l4-momo">🐶</div><small>MIMO</small><h2>${t('ask')}</h2><div class="ccner-l4-row"><button id="ccnerL4Yes" class="ccner-l4-primary">${t('yes')}</button><button id="ccnerL4No" class="ccner-l4-secondary">${t('no')}</button></div></div>`);
     $('#ccnerL4Yes')?.addEventListener('click',()=>showTutorial(title));
     $('#ccnerL4No')?.addEventListener('click',()=>{e.remove();tutorialOpen=false;stopVoice()});
     speak(t('ask'));
@@ -79,7 +79,7 @@
     const info=INFO[title]; if(!info)return;
     stopVoice();
     const get=x=>x[lk()]||x.en;
-    const e=modal(`<div class="ccner-l4-dialog" role="dialog" aria-modal="true"><div class="ccner-l4-momo">🐶</div><small>MOMO</small><h2>${t('title')}</h2><h3>${t('objective')}</h3><p>${get(info.o)}</p><h3>${t('rules')}</h3><p>${get(info.r)}</p><h3>${t('interaction')}</h3><p>${get(info.i)}</p><div class="ccner-l4-row"><button id="ccnerL4Continue" class="ccner-l4-primary">${t('continue')}</button></div></div>`);
+    const e=modal(`<div class="ccner-l4-dialog" role="dialog" aria-modal="true"><div class="ccner-l4-momo">🐶</div><small>MIMO</small><h2>${t('title')}</h2><h3>${t('objective')}</h3><p>${get(info.o)}</p><h3>${t('rules')}</h3><p>${get(info.r)}</p><h3>${t('interaction')}</h3><p>${get(info.i)}</p><div class="ccner-l4-row"><button id="ccnerL4Continue" class="ccner-l4-primary">${t('continue')}</button></div></div>`);
     speak(`${get(info.o)} ${get(info.r)} ${get(info.i)}`);
     $('#ccnerL4Continue')?.addEventListener('click',()=>{e.remove();tutorialOpen=false;stopVoice()});
   }

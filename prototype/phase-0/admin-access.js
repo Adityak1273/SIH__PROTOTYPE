@@ -33,7 +33,7 @@ async function ensureAdmin(){
   const {data}=await c.auth.getSession();const u=data?.session?.user;if(!u||String(u.email||'').toLowerCase()!==ADMIN_EMAIL.toLowerCase())return false;
   let {data:p}=await c.from('profiles').select('*').eq('user_id',u.id).maybeSingle();
   if(!p||p.role!=='admin'){
-    const {data:np,error}=await c.from('profiles').upsert({user_id:u.id,full_name:'Administrator',display_name:'Administrator',preferred_language:'en',role:'admin',requested_role:'admin',momo_name:'Momo',voice_preference:'default',profile_complete:true},{onConflict:'user_id'}).select('*').single();
+    const {data:np,error}=await c.from('profiles').upsert({user_id:u.id,full_name:'Administrator',display_name:'Administrator',preferred_language:'en',role:'admin',requested_role:'admin',momo_name:'Mimo',voice_preference:'default',profile_complete:true},{onConflict:'user_id'}).select('*').single();
     if(error){console.warn('[CCNER Admin] profile bootstrap failed',error);return false;}
     p=np;
   }

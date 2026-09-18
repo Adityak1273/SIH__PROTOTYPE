@@ -34,7 +34,7 @@
     window.addEventListener('pointermove', gaze, {passive:true});
     sync(); scheduleBlink();
   }
-  window.MomoAvatar = {
+  window.MimoAvatar = {
     setMood: apply,
     gesture(name) {
       const r = rig(); if (!r) return;
