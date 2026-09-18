@@ -1,0 +1,13 @@
+{
+  "name": "Cognitive Care NER",
+  "short_name": "Cognitive Care",
+  "description": "Friendly cognitive training and memory assistance for older adults.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7efe5",
+  "theme_color": "#f7efe5",
+  "lang": "en",
+  "categories": ["health", "education", "medical"]
+}

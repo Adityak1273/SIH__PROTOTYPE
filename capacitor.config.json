@@ -1,0 +1,9 @@
+{
+  "appId": "org.cognitivecare.ner",
+  "appName": "Cognitive Care NER",
+  "webDir": "prototype/phase-0",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

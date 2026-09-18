@@ -1,0 +1,92 @@
+name: Quality Gate
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: JavaScript syntax check
+        run: |
+          set -e
+          for f in prototype/phase-0/*.js; do node --check "$f"; done
+      - name: JSON/config validation
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('capacitor.config.json','utf8')); JSON.parse(require('fs').readFileSync('prototype/phase-0/manifest.webmanifest','utf8'));"
+      - name: Required production assets
+        run: |
+          test -f prototype/phase-0/notification-bridge.js
+          test -f prototype/phase-0/security-center.js
+          test -f prototype/phase-0/usability-validation.js
+          test -f prototype/phase-0/level2-auth.js
+          grep -q "@capacitor/local-notifications" package.json
+          grep -q "Content-Security-Policy" server.js
+      - name: Deployment configuration consistency
+        run: |
+          set -e
+          test -f Dockerfile
+          test -f zopday.yaml
+          test -f docker-compose.yml
+          grep -q '"version": "0.18.4"' package.json
+          grep -q '^ENV PORT=80$' Dockerfile
+          grep -q '^ENV BUILD_VERSION=0.18.4$' Dockerfile
+          grep -q "BUILD_VERSION.*0.18.4" server.js
+          grep -q 'styles.css?v=0.18.4' prototype/phase-0/index.html
+          grep -q 'core-boot.js?v=0.18.4' prototype/phase-0/index.html
+          grep -q 'level2-auth.js?v=0.18.4' prototype/phase-0/core-boot.js
+          grep -q 'security-center.js?v=0.18.4' prototype/phase-0/core-boot.js
+          ! grep -q 'phase8-video-override.js' prototype/phase-0/core-boot.js
+          ! grep -q 'phase8-compat.js' prototype/phase-0/core-boot.js
+          grep -q 'dockerfile: Dockerfile' zopday.yaml
+          grep -q '"80:80"' zopday.yaml
+          grep -q '"8080:80"' docker-compose.yml
+      - name: Video game session checks
+        run: |
+          set -e
+          grep -q "Sequence Memory" prototype/phase-0/game-engine-adaptive.js
+          grep -q "Stroop Test" prototype/phase-0/game-engine-adaptive.js
+          grep -q "Around the House Sorting" prototype/phase-0/game-engine-adaptive.js
+          grep -q "Pattern Recognition" prototype/phase-0/game-engine-adaptive.js
+          grep -q "Spot the Difference" prototype/phase-0/game-engine-adaptive.js
+          grep -q "CCNER_VIDEO_GAMES" prototype/phase-0/game-engine-adaptive.js
+          grep -q "startSession" prototype/phase-0/game-engine-adaptive.js
+          grep -q "6" prototype/phase-0/game-engine-adaptive.js
+          grep -q "120" prototype/phase-0/game-engine-adaptive.js
+          grep -q "15" prototype/phase-0/game-engine-adaptive.js
+      - name: Static asset reference check
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const root='prototype/phase-0';
+          const text=fs.readFileSync(`${root}/index.html`,'utf8')+'\n'+fs.readFileSync(`${root}/core-boot.js`,'utf8');
+          const refs=[...text.matchAll(/(?:src|href)=["']\.\/([^?"']+)/g)].map(m=>m[1]);
+          for(const ref of refs){
+            const p=`${root}/${ref}`;
+            if(!fs.existsSync(p)) throw new Error(`Missing referenced asset: ${p}`);
+          }
+          console.log(`Validated ${refs.length} static/dynamic asset references.`);
+          NODE
+      - name: Docker build and HTTP smoke test
+        run: |
+          set -euxo pipefail
+          IMAGE="cognitive-care-ner:${GITHUB_SHA}"
+          docker build --pull -t "$IMAGE" .
+          docker run -d --name ccner-smoke -p 18080:80 "$IMAGE"
+          cleanup() { docker logs ccner-smoke || true; docker rm -f ccner-smoke || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/health; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/health | grep -q '"ok":true'
+          curl -fsS http://127.0.0.1:18080/ | grep -q 'Cognitive Care NER'
+          test "$(docker inspect -f '{{.State.Running}}' ccner-smoke)" = "true"
+      - name: Secret-pattern guard
+        run: |
+          ! grep -RInE "sk-[A-Za-z0-9_-]{20,}|service_role|SUPABASE_SERVICE_ROLE_KEY" --include='*.js' --include='*.json' prototype server.js package.json capacitor.config.json

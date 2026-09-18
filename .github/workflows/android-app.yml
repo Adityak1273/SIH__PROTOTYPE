@@ -1,0 +1,60 @@
+name: Build Android App
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund --progress=false
+      - name: Create Android project
+        run: npx cap add android
+      - name: Declare Android notification permissions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          s=p.read_text()
+          perms=['android.permission.POST_NOTIFICATIONS','android.permission.SCHEDULE_EXACT_ALARM']
+          start=s.find('<manifest')
+          if start < 0:
+              raise SystemExit('AndroidManifest.xml has no manifest element')
+          pos=s.find('>', start)+1
+          if pos <= start:
+              raise SystemExit('Could not locate manifest opening tag')
+          additions=''.join(f'\n    <uses-permission android:name="{x}" />' for x in perms if f'android:name="{x}"' not in s)
+          if additions:
+              s=s[:pos]+additions+s[pos:]
+              p.write_text(s)
+          PY
+      - name: Sync web app into Android
+        run: npx cap sync android
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cognitive-care-ner-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

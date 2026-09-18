@@ -1,0 +1,29 @@
+/* Native background reminder delivery for Capacitor Android, with web fallback. */
+(function(){
+  'use strict';
+  const KEY='ccner-p1-reminders',CHANNEL_ID='ccner-reminders';
+  const read=()=>{try{const v=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(v)?v:[]}catch(_){return[]}};
+  const save=v=>localStorage.setItem(KEY,JSON.stringify(v));
+  const native=()=>window.Capacitor?.Plugins?.LocalNotifications||null;
+  const stableId=s=>{let h=2166136261;for(let i=0;i<String(s).length;i++){h^=String(s).charCodeAt(i);h=Math.imul(h,16777619)}return Math.abs(h>>>0)%2147483000+1};
+  const inferKind=r=>{if(r?.kind)return r.kind;const t=String(r?.title||'').toLowerCase();if(/medicine|medication|tablet|pill/.test(t))return'medicine';if(/water|hydration|drink/.test(t))return'hydration';if(/appointment|doctor|hospital|clinic/.test(t))return'appointment';if(/walk|exercise|activity|bath|breakfast|meal/.test(t))return'daily_activity';return'general'};
+  const kindText=k=>({medicine:'Please take your medicine now.',hydration:'Please drink a little water now.',appointment:'You have an appointment reminder.',daily_activity:'It is time for your planned daily activity.',general:'It is time for your reminder.'}[k||'general']);
+  async function check(){const p=native();if(p){try{return await p.checkPermissions()}catch(_){return {display:'denied'}}}if('Notification'in window)return {display:Notification.permission};return {display:'denied'}}
+  async function ensurePermission(){const p=native();if(p){try{let status=await p.checkPermissions();if(status.display!=='granted'){status=await p.requestPermissions();if(status.display!=='granted')return false}await p.createChannel?.({id:CHANNEL_ID,name:'Cognitive Care reminders',description:'Medicine, hydration and daily activity reminders',importance:5,sound:'default',vibration:true,lights:true});return true}catch(_){return false}}if('Notification'in window){if(Notification.permission==='granted')return true;if(Notification.permission==='denied')return false;return(await Notification.requestPermission())==='granted'}return false}
+  async function exactAlarmStatus(){const p=native();if(!p?.checkExactNotificationSetting)return {exact_alarm:'granted'};try{return await p.checkExactNotificationSetting()}catch(_){return {exact_alarm:'denied'}}}
+  async function requestExactAlarm(){const p=native();if(!p?.changeExactNotificationSetting)return true;try{const s=await p.checkExactNotificationSetting?.();if(s?.exact_alarm==='granted')return true;const changed=await p.changeExactNotificationSetting();return changed?.exact_alarm==='granted'}catch(_){return false}}
+  function timeParts(time){const m=String(time||'').match(/^(\d{2}):(\d{2})$/);return m?{hour:Number(m[1]),minute:Number(m[2])}:null}
+  function nextDate(time){const now=new Date(),p=timeParts(time);if(!p)return null;const d=new Date(now);d.setHours(p.hour,p.minute,0,0);if(d<=now)d.setDate(d.getDate()+1);return d}
+  async function scheduleOne(r){const p=native();if(!p||r.enabled===false||r.active===false)return false;const raw=r.time||r.reminder_time,parts=timeParts(raw);if(!parts)return false;const repeat=(r.repeat||r.repeat_rule)==='daily',at=nextDate(raw),id=stableId(r.id||r.client_id||r.title),kind=inferKind(r);try{await p.cancel({notifications:[{id}]});const schedule=repeat?{on:{hour:parts.hour,minute:parts.minute},allowWhileIdle:true}:{at,allowWhileIdle:true};const result=await p.schedule({notifications:[{id,title:r.title||'Momo reminder',body:kindText(kind),channelId:CHANNEL_ID,schedule,autoCancel:true,foreground:true,isExactNotification:true,extra:{reminderId:r.id||null,kind,title:r.title||'Reminder'}}]});return !result?.warning||result.warning.code!=='OS-PLUG-LNOT-0017'}catch(_){return false}}
+  async function cancelOne(r){const p=native();if(!p)return false;try{await p.cancel({notifications:[{id:stableId(r.id||r.client_id||r.title)}]});return true}catch(_){return false}}
+  async function syncAll(){const p=native();if(!p)return false;const ok=await ensurePermission();if(!ok)return false;const rows=read(),wanted=new Set(rows.filter(r=>r.enabled!==false&&r.active!==false).map(r=>stableId(r.id||r.client_id||r.title)));try{const pending=await p.getPending?.(),stale=(pending?.notifications||[]).filter(n=>!wanted.has(Number(n.id)));if(stale.length)await p.cancel({notifications:stale.map(n=>({id:Number(n.id)}))})}catch(_){}for(const r of rows){if(r.enabled===false||r.active===false)await cancelOne(r);else await scheduleOne(r)}return true}
+  async function request(){const notifications=await ensurePermission();if(!notifications)return false;await requestExactAlarm();return syncAll()}
+  async function upsert(r){const rows=read(),normalized={...r,active:r.active!==false,enabled:r.enabled!==false,kind:inferKind(r)};const i=rows.findIndex(x=>x.id===normalized.id);if(i>=0)rows[i]=normalized;else rows.push(normalized);save(rows);if(native()){await ensurePermission();return scheduleOne(normalized)}return true}
+  async function remove(id){const rows=read(),r=rows.find(x=>x.id===id);if(r)await cancelOne(r);save(rows.filter(x=>x.id!==id));return true}
+  window.CCNERNotifications={check,ensurePermission,exactAlarmStatus,requestExactAlarm,syncAll,request,upsert,remove,isNative:()=>!!native()};
+  function dispatch(n){window.dispatchEvent(new CustomEvent('ccner:reminder-fired',{detail:n||{}}))}
+  const p=native();
+  if(p?.addListener){p.addListener('localNotificationReceived',n=>dispatch(n));p.addListener('localNotificationActionPerformed',a=>dispatch(a?.notification||a));}
+  window.addEventListener('online',()=>syncAll());document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncAll()});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(syncAll,800));else setTimeout(syncAll,800);
+})();

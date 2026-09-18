@@ -1,0 +1,9 @@
+version: "1"
+
+services:
+  cognitive-care-ner-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"

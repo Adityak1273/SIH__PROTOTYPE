@@ -1,0 +1,24 @@
+/* Cognitive Care NER — exam-style game interaction polish v1 */
+
+body.ccner-v6 .v6-meta{gap:16px;align-items:center;flex-wrap:wrap;line-height:1.35}
+body.ccner-v6 .v6-meta span{white-space:nowrap}
+
+/* Pattern Recognition: make the question unmistakably separate from the choices. */
+body.ccner-v6 .v6-pattern{position:relative;margin:24px auto 28px;padding:24px 18px 22px;border:1px solid #365a46;border-radius:16px;background:#081910;gap:10px;min-height:92px;box-sizing:border-box}
+body.ccner-v6 .v6-pattern::before{content:'QUESTION';position:absolute;top:-12px;left:18px;padding:4px 10px;border-radius:999px;background:#55ca8d;color:#06120c;font-size:11px;font-weight:950;letter-spacing:.12em}
+body.ccner-v6 .v6-pattern span{min-width:58px;min-height:58px;padding:0 10px;box-sizing:border-box;font-size:1.25rem;background:#0b2518;border-color:#3a624c}
+body.ccner-v6 .v6-pattern span:last-child{background:#f4eadf;color:#3d3029;border:2px dashed #c17a45;box-shadow:0 5px 0 rgba(0,0,0,.18);font-size:1.5rem;font-weight:950}
+
+body.ccner-v6 .v6-choice{position:relative;max-width:560px;margin:38px auto 12px;padding:30px 18px 18px;border:1px solid #365a46;border-radius:16px;background:#081910;box-sizing:border-box;gap:14px}
+body.ccner-v6 .v6-choice::before{content:'ANSWER OPTIONS';position:absolute;top:-12px;left:18px;padding:4px 10px;border-radius:999px;background:#f4eadf;color:#4a3930;font-size:11px;font-weight:950;letter-spacing:.1em;border:1px solid #d9c6b6}
+body.ccner-v6 .v6-choice button{min-height:76px;font-size:1.2rem;border:2px solid #355a45;background:#0b2116;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.18);transition:transform .08s ease,background .12s ease,border-color .12s ease}
+body.ccner-v6 .v6-choice button:hover{background:#276f4b;border-color:#65d39a;transform:translateY(-1px)}
+body.ccner-v6 .v6-choice button:focus-visible{outline:3px solid #f0d9a8;outline-offset:3px}
+
+/* Keep the question and options visually separated on small screens too. */
+@media(max-width:600px){
+  body.ccner-v6 .v6-pattern{margin-bottom:30px;padding:22px 10px 18px;gap:7px}
+  body.ccner-v6 .v6-pattern span{min-width:48px;min-height:52px;font-size:1.05rem}
+  body.ccner-v6 .v6-choice{margin-top:38px;padding:30px 12px 14px;gap:10px}
+  body.ccner-v6 .v6-choice button{min-height:70px;font-size:1.1rem}
+}
