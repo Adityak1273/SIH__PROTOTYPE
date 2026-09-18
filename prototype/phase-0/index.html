@@ -1,1 +1,323 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" /><meta name="theme-color" content="#f7efe5" /><meta name="description" content="Cognitive Care NER — elderly-friendly cognitive training app with Momo companion." /><meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" /><title>Cognitive Care NER — Full Training Build</title><style>[hidden]{display:none!important}</style><link rel="stylesheet" href="./styles.css?v=0.20.0" /><link rel="stylesheet" href="./avatar.css?v=0.20.0" /><link rel="stylesheet" href="./phase1.css?v=0.20.0" /><link rel="stylesheet" href="./phase2.css?v=0.20.0" /><link rel="stylesheet" href="./phase3.css?v=0.20.0" /><link rel="stylesheet" href="./phase4.css?v=0.20.0" /><link rel="stylesheet" href="./multilingual.css?v=0.20.0" /><link rel="stylesheet" href="./regional-language.css?v=0.20.0" /><link rel="stylesheet" href="./level3-dashboard.css?v=0.20.0" /><link rel="stylesheet" href="./level3-momo-fab.css?v=0.20.0" /><link rel="stylesheet" href="./level1-memory.css?v=0.20.0" /></head><body><main class="app-shell"><header class="topbar"><div><p class="eyebrow">COGNITIVE CARE NER · FULL TRAINING</p><h1 id="pageTitle">Meet Momo</h1><p class="subtitle">Your playful companion for today's brain workout.</p></div><div class="top-actions"><button id="soundToggle" class="icon-button" type="button" aria-pressed="true" title="Toggle voice">🔊</button><button id="homeButton" class="icon-button" type="button" title="Home" aria-label="Home">⌂</button></div></header><section id="homeView" class="view"><section class="companion-card"><div class="status-row"><span id="statusPill" class="status-pill"><span class="status-dot"></span><span id="statusText">Ready to play</span></span><span id="moodText" class="mood-text">Mood: happy</span></div><div id="stage" class="stage mood-happy" aria-live="polite"><div class="spark spark-1">✦</div><div class="spark spark-2">✦</div><div class="spark spark-3">•</div><div class="thought" id="thought">I have a tiny plan… and it's fun.</div><div id="momoRig" class="momo-rig" data-mood="happy" data-gesture="none" role="img" aria-label="Animated Momo puppy companion"><div class="momo-shadow"></div><div class="momo-tail"></div><div class="momo-leg left"><span class="momo-foot"></span></div><div class="momo-leg right"><span class="momo-foot"></span></div><div class="momo-torso"><span class="momo-belly"></span><span class="momo-badge">♥</span></div><div class="momo-arm left"><span class="momo-hand"></span></div><div class="momo-arm right"><span class="momo-hand"></span></div><div class="momo-neck"></div><div class="momo-head"><div class="momo-ear left"></div><div class="momo-ear right"></div><div class="momo-hair"></div><div class="momo-brow left"></div><div class="momo-brow right"></div><div class="momo-eye left"><span class="momo-pupil"></span><span class="momo-lid"></span></div><div class="momo-eye right"><span class="momo-pupil"></span><span class="momo-lid"></span></div><div class="momo-nose"></div><div class="momo-mouth"><span class="momo-tongue"></span></div><div class="momo-blush left"></div><div class="momo-blush right"></div><span class="momo-sweat">💧</span></div></div></div><div class="speech"><span class="speech-name">Momo</span><p id="speechText">Hello! I'm Momo. Shall we play a few little games together? 🐾</p></div><div class="quick-actions"><button class="action-button primary" data-action="start" type="button">🎮 Start today's session</button><button class="action-button" data-action="talk" type="button">🎙️ Talk to Momo</button><button class="action-button" data-action="reminder" type="button">⏰ Reminders</button><button class="action-button" data-action="progress" type="button">📈 Progress</button></div><div class="voice-banner"><span class="voice-orb">🎙️</span><div><strong>Hands-free voice</strong><p>Tap Talk once. After Momo replies, he automatically listens again.</p></div><span id="voiceHint" class="voice-live" hidden>Listening…</span></div><div class="chat-row"><input id="chatInput" type="text" autocomplete="off" placeholder="Or type to Momo…" aria-label="Message Momo" /><button id="sendButton" class="send-button" type="button">Send</button></div><p class="phase4-safety">Safety: training scores describe game performance only. They do not diagnose dementia or assign a clinical stage.</p></section><section class="section-label"><p class="eyebrow">TODAY</p><h2>Your little daily routine</h2></section><section class="info-grid"><article><span>Today's activity</span><strong id="todayStatus">Not started</strong></article><article><span>Games</span><strong>5 · guided + adaptive</strong></article><article><span>Focus</span><strong>Memory · Attention · Routine · Patterns</strong></article></section><div id="phase1AccountHint"></div><section class="home-strip"><div><span>🐾 Momo's promise</span><strong>No pressure. Just one small step at a time.</strong></div><div class="strip-arrow">›</div></section></section><section id="gameView" class="view" hidden><div class="game-top"><div><p class="eyebrow" id="gameCategory">MEMORY</p><h2 id="gameTitle">Today's Cognitive Game</h2></div><div class="game-top-actions"><button id="gameExitBtn" class="game-exit-btn" type="button" aria-label="Exit this game">Exit</button></div><div class="progress-box"><span id="gameCounter">1 of 5</span><div class="progress-track"><i id="progressBar"></i></div></div></div><div class="game-card"><div id="gamePrompt" class="game-prompt">Remember these objects.</div><div id="gameArea" class="game-area"></div><div id="gameFeedback" class="game-feedback" aria-live="polite"></div></div><div class="mini-companion"><div class="mini-momo">🐶</div><div><strong id="gameMomoTitle">Momo</strong><p id="gameMomoText">I'll stay with you. No rush.</p></div><span class="live-dot">LIVE</span></div></section><section id="resultsView" class="view" hidden><section class="result-hero"><div class="result-cat">🐶</div><p class="eyebrow">SESSION COMPLETE</p><h2 id="resultHeading">You did it!</h2><p id="resultMessage">That was a lovely little workout.</p></section><div class="result-grid"><article><span>Overall score</span><strong id="overallScore">0%</strong></article><article><span>Accuracy</span><strong id="overallAccuracy">0%</strong></article><article><span>Games completed</span><strong id="gamesCompleted">0 / 5</strong></article><article><span>Average response</span><strong id="avgTime">0.0s</strong></article></div><section class="results-card"><div class="section-heading"><div><p class="eyebrow">TRAINING PERFORMANCE</p><h3>Today's games</h3></div><span id="trendBadge" class="trend-badge">First session</span></div><div id="resultRows"></div><p class="disclaimer">These results describe game performance and training progress. They are not a dementia diagnosis or a clinical assessment.</p></section><div class="quick-actions result-actions"><button id="playAgain" class="action-button primary" type="button">🔁 Play again</button><button id="backHome" class="action-button" type="button">⌂ Return to Home</button></div></section><section id="overlayPanel" class="overlay-panel" hidden><div class="overlay-inner"><button id="closeOverlay" class="close-button" type="button" aria-label="Close">×</button><div id="overlayContent"></div></div></section><nav class="bottom-nav" aria-label="Main navigation"><button type="button" data-nav="homeView" class="active"><span>⌂</span><small>Home</small></button><button type="button" data-nav="resultsView"><span>◉</span><small>Progress</small></button><button type="button" data-nav="reminders"><span>◷</span><small>Reminders</small></button><button type="button" data-nav="settings"><span>⚙</span><small>Settings</small></button></nav><footer>Full training build · 5 cognitive games + Momo + adaptive loop + clinical intelligence · build 0.20.0</footer></main><script src="./rule-engine.js?v=1.0.0"></script><script src="./core-boot.js?v=0.20.0"></script><script src="./app.js?v=0.20.0"></script><script src="./config.js?v=0.20.0"></script><script src="./api-bridge.js?v=0.20.0"></script><script src="./native-voice.js?v=0.20.0"></script><script src="./avatar-engine.js?v=0.20.0"></script><script src="./phase1.js?v=0.20.0"></script><script src="./phase2.js?v=0.20.0"></script><script src="./phase3.js?v=0.20.0"></script><script src="./phase4.js?v=0.20.0"></script><script src="./multilingual.js?v=0.20.0"></script><script src="./language-registry.js?v=0.20.0"></script><script src="./regional-language-ui.js?v=0.20.0"></script><script src="./level3-dashboard.js?v=0.20.0"></script><script src="./level3-momo-fab.js?v=0.20.0"></script><script src="./level1-memory.js?v=0.20.0"></script><script src="./level1-integration.js?v=0.20.0"></script><script src="./hide-daily-routine.js?v=0.20.0"></script><script src="./game-controls.js?v=0.20.0"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#f7efe5" />
+    <meta
+      name="description"
+      content="Cognitive Care NER — elderly-friendly cognitive training app with Momo companion."
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Cognitive Care NER — Full Training Build</title>
+    <style>
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+    <link rel="stylesheet" href="./styles.css?v=0.20.0" />
+    <link rel="stylesheet" href="./drawer-nav.css?v=0.20.0" />
+    <link rel="stylesheet" href="./avatar.css?v=0.20.0" />
+    <link rel="stylesheet" href="./phase1.css?v=0.20.0" />
+    <link rel="stylesheet" href="./phase2.css?v=0.20.0" />
+    <link rel="stylesheet" href="./phase3.css?v=0.20.0" />
+    <link rel="stylesheet" href="./phase4.css?v=0.20.0" />
+    <link rel="stylesheet" href="./multilingual.css?v=0.20.0" />
+    <link rel="stylesheet" href="./regional-language.css?v=0.20.0" />
+    <link rel="stylesheet" href="./level3-dashboard.css?v=0.20.0" />
+    <link rel="stylesheet" href="./level3-momo-fab.css?v=0.20.0" />
+    <link rel="stylesheet" href="./level1-memory.css?v=0.20.0" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">COGNITIVE CARE NER · FULL TRAINING</p>
+          <h1 id="pageTitle">Meet Momo</h1>
+          <p class="subtitle">
+            Your playful companion for today's brain workout.
+          </p>
+        </div>
+        <div class="top-actions">
+          <button
+            id="soundToggle"
+            class="icon-button"
+            type="button"
+            aria-pressed="true"
+            title="Toggle voice"
+          >
+            🔊</button
+          ><button
+            id="homeButton"
+            class="icon-button"
+            type="button"
+            title="Home"
+            aria-label="Home"
+          >
+            ⌂
+          </button>
+        </div>
+      </header>
+      <section id="homeView" class="view">
+        <section class="companion-card">
+          <div class="status-row">
+            <span id="statusPill" class="status-pill"
+              ><span class="status-dot"></span
+              ><span id="statusText">Ready to play</span></span
+            ><span id="moodText" class="mood-text">Mood: happy</span>
+          </div>
+          <div id="stage" class="stage mood-happy" aria-live="polite">
+            <div class="spark spark-1">✦</div>
+            <div class="spark spark-2">✦</div>
+            <div class="spark spark-3">•</div>
+            <div class="thought" id="thought">
+              I have a tiny plan… and it's fun.
+            </div>
+            <div
+              id="momoRig"
+              class="momo-rig"
+              data-mood="happy"
+              data-gesture="none"
+              role="img"
+              aria-label="Animated Momo puppy companion"
+            >
+              <div class="momo-shadow"></div>
+              <div class="momo-tail"></div>
+              <div class="momo-leg left"><span class="momo-foot"></span></div>
+              <div class="momo-leg right"><span class="momo-foot"></span></div>
+              <div class="momo-torso">
+                <span class="momo-belly"></span
+                ><span class="momo-badge">♥</span>
+              </div>
+              <div class="momo-arm left"><span class="momo-hand"></span></div>
+              <div class="momo-arm right"><span class="momo-hand"></span></div>
+              <div class="momo-neck"></div>
+              <div class="momo-head">
+                <div class="momo-ear left"></div>
+                <div class="momo-ear right"></div>
+                <div class="momo-hair"></div>
+                <div class="momo-brow left"></div>
+                <div class="momo-brow right"></div>
+                <div class="momo-eye left">
+                  <span class="momo-pupil"></span><span class="momo-lid"></span>
+                </div>
+                <div class="momo-eye right">
+                  <span class="momo-pupil"></span><span class="momo-lid"></span>
+                </div>
+                <div class="momo-nose"></div>
+                <div class="momo-mouth"><span class="momo-tongue"></span></div>
+                <div class="momo-blush left"></div>
+                <div class="momo-blush right"></div>
+                <span class="momo-sweat">💧</span>
+              </div>
+            </div>
+          </div>
+          <div class="speech">
+            <span class="speech-name">Momo</span>
+            <p id="speechText">
+              Hello! I'm Momo. Shall we play a few little games together? 🐾
+            </p>
+          </div>
+          <div class="quick-actions">
+            <button
+              class="action-button primary"
+              data-action="start"
+              type="button"
+            >
+              🎮 Start today's session</button
+            ><button class="action-button" data-action="talk" type="button">
+              🎙️ Talk to Momo</button
+            ><button class="action-button" data-action="reminder" type="button">
+              ⏰ Reminders</button
+            ><button class="action-button" data-action="progress" type="button">
+              📈 Progress
+            </button>
+          </div>
+          <div class="voice-banner">
+            <span class="voice-orb">🎙️</span>
+            <div>
+              <strong>Hands-free voice</strong>
+              <p>
+                Tap Talk once. After Momo replies, he automatically listens
+                again.
+              </p>
+            </div>
+            <span id="voiceHint" class="voice-live" hidden>Listening…</span>
+          </div>
+          <div class="chat-row">
+            <input
+              id="chatInput"
+              type="text"
+              autocomplete="off"
+              placeholder="Or type to Momo…"
+              aria-label="Message Momo"
+            /><button id="sendButton" class="send-button" type="button">
+              Send
+            </button>
+          </div>
+          <p class="phase4-safety">
+            Safety: training scores describe game performance only. They do not
+            diagnose dementia or assign a clinical stage.
+          </p>
+        </section>
+        <section class="section-label">
+          <p class="eyebrow">TODAY</p>
+          <h2>Your little daily routine</h2>
+        </section>
+        <section class="info-grid">
+          <article>
+            <span>Today's activity</span
+            ><strong id="todayStatus">Not started</strong>
+          </article>
+          <article>
+            <span>Games</span><strong>5 · guided + adaptive</strong>
+          </article>
+          <article>
+            <span>Focus</span
+            ><strong>Memory · Attention · Routine · Patterns</strong>
+          </article>
+        </section>
+        <div id="phase1AccountHint"></div>
+        <section class="home-strip">
+          <div>
+            <span>🐾 Momo's promise</span
+            ><strong>No pressure. Just one small step at a time.</strong>
+          </div>
+          <div class="strip-arrow">›</div>
+        </section>
+      </section>
+      <section id="gameView" class="view" hidden>
+        <div class="game-top">
+          <div>
+            <p class="eyebrow" id="gameCategory">MEMORY</p>
+            <h2 id="gameTitle">Today's Cognitive Game</h2>
+          </div>
+          <div class="game-top-actions">
+            <button
+              id="gameExitBtn"
+              class="game-exit-btn"
+              type="button"
+              aria-label="Exit this game"
+            >
+              Exit
+            </button>
+          </div>
+          <div class="progress-box">
+            <span id="gameCounter">1 of 5</span>
+            <div class="progress-track"><i id="progressBar"></i></div>
+          </div>
+        </div>
+        <div class="game-card">
+          <div id="gamePrompt" class="game-prompt">Remember these objects.</div>
+          <div id="gameArea" class="game-area"></div>
+          <div id="gameFeedback" class="game-feedback" aria-live="polite"></div>
+        </div>
+        <div class="mini-companion">
+          <div class="mini-momo">🐶</div>
+          <div>
+            <strong id="gameMomoTitle">Momo</strong>
+            <p id="gameMomoText">I'll stay with you. No rush.</p>
+          </div>
+          <span class="live-dot">LIVE</span>
+        </div>
+      </section>
+      <section id="resultsView" class="view" hidden>
+        <section class="result-hero">
+          <div class="result-cat">🐶</div>
+          <p class="eyebrow">SESSION COMPLETE</p>
+          <h2 id="resultHeading">You did it!</h2>
+          <p id="resultMessage">That was a lovely little workout.</p>
+        </section>
+        <div class="result-grid">
+          <article>
+            <span>Overall score</span><strong id="overallScore">0%</strong>
+          </article>
+          <article>
+            <span>Accuracy</span><strong id="overallAccuracy">0%</strong>
+          </article>
+          <article>
+            <span>Games completed</span
+            ><strong id="gamesCompleted">0 / 5</strong>
+          </article>
+          <article>
+            <span>Average response</span><strong id="avgTime">0.0s</strong>
+          </article>
+        </div>
+        <section class="results-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">TRAINING PERFORMANCE</p>
+              <h3>Today's games</h3>
+            </div>
+            <span id="trendBadge" class="trend-badge">First session</span>
+          </div>
+          <div id="resultRows"></div>
+          <p class="disclaimer">
+            These results describe game performance and training progress. They
+            are not a dementia diagnosis or a clinical assessment.
+          </p>
+        </section>
+        <div class="quick-actions result-actions">
+          <button id="playAgain" class="action-button primary" type="button">
+            🔁 Play again</button
+          ><button id="backHome" class="action-button" type="button">
+            ⌂ Return to Home
+          </button>
+        </div>
+      </section>
+      <section id="overlayPanel" class="overlay-panel" hidden>
+        <div class="overlay-inner">
+          <button
+            id="closeOverlay"
+            class="close-button"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+          <div id="overlayContent"></div>
+        </div>
+      </section>
+      <nav class="bottom-nav" aria-label="Main navigation">
+        <button type="button" data-nav="homeView" class="active">
+          <span>⌂</span><small>Home</small></button
+        ><button type="button" data-nav="resultsView">
+          <span>◉</span><small>Progress</small></button
+        ><button type="button" data-nav="reminders">
+          <span>◷</span><small>Reminders</small></button
+        ><button type="button" data-nav="settings">
+          <span>⚙</span><small>Settings</small>
+        </button>
+      </nav>
+      <footer>
+        Full training build · 5 cognitive games + Momo + adaptive loop +
+        clinical intelligence · build 0.20.0
+      </footer>
+    </main>
+    <script src="./rule-engine.js?v=1.0.0"></script>
+    <script src="./core-boot.js?v=0.20.0"></script>
+    <script src="./app.js?v=0.20.0"></script>
+    <script src="./drawer-nav.js?v=0.20.0"></script>
+    <script src="./config.js?v=0.20.0"></script>
+    <script src="./api-bridge.js?v=0.20.0"></script>
+    <script src="./native-voice.js?v=0.20.0"></script>
+    <script src="./avatar-engine.js?v=0.20.0"></script>
+    <script src="./phase1.js?v=0.20.0"></script>
+    <script src="./phase2.js?v=0.20.0"></script>
+    <script src="./phase3.js?v=0.20.0"></script>
+    <script src="./phase4.js?v=0.20.0"></script>
+    <script src="./multilingual.js?v=0.20.0"></script>
+    <script src="./language-registry.js?v=0.20.0"></script>
+    <script src="./regional-language-ui.js?v=0.20.0"></script>
+    <script src="./level3-dashboard.js?v=0.20.0"></script>
+    <script src="./level3-momo-fab.js?v=0.20.0"></script>
+    <script src="./level1-memory.js?v=0.20.0"></script>
+    <script src="./level1-integration.js?v=0.20.0"></script>
+    <script src="./hide-daily-routine.js?v=0.20.0"></script>
+    <script src="./game-controls.js?v=0.20.0"></script>
+  </body>
+</html>

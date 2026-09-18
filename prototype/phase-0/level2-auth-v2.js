@@ -133,17 +133,7 @@
               <button class="l2v-btn secondary" id="l2vBtnSignup">Create Account</button>
             </div>
 
-            <div class="l2v-demo-box">
-              <strong>⭐ Reviewer & Evaluation Quick Demo Accounts</strong>
-              <div class="l2v-demo-actions">
-                <button class="l2v-demo-btn" id="l2vDemoPatient" type="button">
-                  <span>👴</span> Use Patient Demo (patient.demo)
-                </button>
-                <button class="l2v-demo-btn" id="l2vDemoCaregiver" type="button">
-                  <span>👩‍⚕️</span> Use Caregiver Demo (caregiver.demo)
-                </button>
-              </div>
-            </div>
+
 
             <div class="l2v-note">
               <strong>Notice:</strong> All cognitive training scores reflect game engagement and activity patterns only. They do not constitute a dementia diagnosis or clinical assessment.
@@ -533,10 +523,6 @@
       }
 
       if (!resp.ok) {
-        // Fallback for standalone prototype / offline test demo accounts
-        if (idInput === 'patient.demo' || idInput === 'caregiver.demo') {
-          return completeDemoOfflineLogin(idInput);
-        }
         return msg('Invalid credentials. Please check your login ID and password.');
       }
 
@@ -549,11 +535,7 @@
 
       routeAfterAuth(data.redirect_to || (currentUser.role === 'caregiver' ? '/caregiver/dashboard' : '/patient/dashboard'));
     } catch (e) {
-      // Offline fallback
-      if (idInput === 'patient.demo' || idInput === 'caregiver.demo') {
-        return completeDemoOfflineLogin(idInput);
-      }
-      msg('Network connection unavailable. Please check connection or use demo accounts.');
+      msg('Network connection unavailable. Please check connection.');
     }
   }
 
@@ -635,29 +617,7 @@
     routeAfterAuth('/patient/dashboard');
   }
 
-  function completeDemoOfflineLogin(identifier) {
-    const isCaregiver = identifier === 'caregiver.demo';
-    currentUser = {
-      id: isCaregiver ? 2 : 1,
-      name: isCaregiver ? 'Pooja Sharma' : 'Aditya Sharma',
-      username: identifier,
-      role: isCaregiver ? 'caregiver' : 'patient',
-      isOfflineDemo: true,
-    };
-    currentProfile = {
-      full_name: currentUser.name,
-      preferred_name: isCaregiver ? 'Pooja' : 'Aditya',
-      region: 'Assam',
-      preferred_language: 'en-IN',
-      momo_name: 'Momo',
-      profile_complete: true,
-      profile_completion_pct: isCaregiver ? 100 : 85,
-    };
-    authToken = `offline-demo-token-${identifier}`;
-    localStorage.setItem('ccner-token', authToken);
-    localStorage.setItem('ccner-auth-session', JSON.stringify({ user: currentUser, profile: currentProfile }));
-    routeAfterAuth(isCaregiver ? '/caregiver/dashboard' : '/patient/dashboard');
-  }
+
 
   function completeCaregiverSignup() {
     currentUser.role = 'caregiver';
@@ -674,10 +634,21 @@
     gateEl?.remove();
     gateEl = null;
 
-    if (currentUser?.role === 'caregiver' || path === '/caregiver/dashboard') {
+    if (path === '/caregiver/dashboard' && currentUser?.role !== 'caregiver' && currentUser?.role !== 'health_worker') {
+       return renderPatientDashboard();
+    }
+    if (path === '/patient/dashboard' && (currentUser?.role === 'caregiver' || currentUser?.role === 'health_worker')) {
+       return renderCaregiverDashboard();
+    }
+
+    if (currentUser?.role === 'caregiver' || currentUser?.role === 'health_worker') {
       renderCaregiverDashboard();
     } else {
       renderPatientDashboard();
+    }
+    
+    if (window.CCNERDrawer) {
+      window.CCNERDrawer.update();
     }
   }
 
@@ -1336,7 +1307,7 @@
   }
 
   async function signOut() {
-    if (authToken && !authToken.startsWith('offline-demo-token-')) {
+    if (authToken) {
       try {
         await fetch(`${API_BASE}/auth/logout`, {
           method: 'POST',
@@ -1362,21 +1333,6 @@
   async function init() {
     // Check if valid token exists in storage
     if (authToken) {
-      if (authToken.startsWith('offline-demo-token-')) {
-        const cached = localStorage.getItem('ccner-auth-session');
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (parsed && parsed.user) {
-              currentUser = parsed.user;
-              currentUser.isOfflineDemo = true;
-              currentProfile = parsed.profile;
-              routeAfterAuth(currentUser.role === 'caregiver' ? '/caregiver/dashboard' : '/patient/dashboard');
-              return;
-            }
-          } catch (_) {}
-        }
-      }
 
       try {
         const resp = await fetch(`${API_BASE}/auth/user`, {
