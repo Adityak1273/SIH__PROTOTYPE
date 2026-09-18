@@ -690,6 +690,10 @@
     // Ensure caregiver administrative launch buttons are NOT present on home view
     document.querySelectorAll('.p2-dashboard-launch, #phCaregiverButton').forEach(b => b.remove());
 
+    // Restore bottom-nav if it was hidden
+    const nav = document.querySelector('.bottom-nav');
+    if (nav) nav.style.display = '';
+
     showApp();
     window.CCNERRuleEngine?.setState({ auth: 'authenticated', role: 'patient' });
     window.CCNERRuleEngine?.evaluate('AUTH_SUCCESS', { role: 'patient' });
