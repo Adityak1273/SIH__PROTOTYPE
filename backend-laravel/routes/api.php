@@ -48,6 +48,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/clinical/profile', [ClinicalIntelligenceController::class, 'getProfile']);
         });
 
+        // Momo Companion AI Gateway (Secure server-side proxy; API key never exposed to client)
+        Route::prefix('companion')->group(function () {
+            Route::post('/chat', [MomoGatewayController::class, 'chat']);
+            Route::post('/explain-game', [MomoGatewayController::class, 'explainGame']);
+            Route::post('/summarize-activity', [MomoGatewayController::class, 'summarizeActivity']);
+        });
+
         // Privacy & Consent
         Route::get('/privacy/consents', [ConsentController::class, 'index']);
         Route::post('/privacy/consents', [ConsentController::class, 'store']);
