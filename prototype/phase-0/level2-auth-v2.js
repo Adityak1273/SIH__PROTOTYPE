@@ -919,10 +919,14 @@
           <div class="l2v-field">
             <label>Interface Language</label>
             <select id="setPLang">
-              <option value="en-IN" ${prof.preferred_language === 'en-IN' ? 'selected' : ''}>English</option>
-              <option value="hi-IN" ${prof.preferred_language === 'hi-IN' ? 'selected' : ''}>Hindi</option>
-              <option value="bn-IN" ${prof.preferred_language === 'bn-IN' ? 'selected' : ''}>Bengali</option>
-              <option value="as-IN" ${prof.preferred_language === 'as-IN' ? 'selected' : ''}>Assamese</option>
+              <option value="en-IN" ${prof.preferred_language === 'en-IN' ? 'selected' : ''}>English · English</option>
+              <option value="hi-IN" ${prof.preferred_language === 'hi-IN' ? 'selected' : ''}>Hindi · हिन्दी</option>
+              <option value="bn-IN" ${prof.preferred_language === 'bn-IN' ? 'selected' : ''}>Bengali · বাংলা</option>
+              <option value="as-IN" ${prof.preferred_language === 'as-IN' ? 'selected' : ''}>Assamese · অসমীয়া</option>
+              <option value="lus-IN" ${prof.preferred_language === 'lus-IN' ? 'selected' : ''}>Mizo · Mizo</option>
+              <option value="kha-IN" ${prof.preferred_language === 'kha-IN' ? 'selected' : ''}>Khasi · Khasi</option>
+              <option value="mni-IN" ${prof.preferred_language === 'mni-IN' ? 'selected' : ''}>Meitei (Manipuri) · ꯃꯤꯇꯩꯂꯣꯟ</option>
+              <option value="njz-IN" ${prof.preferred_language === 'njz-IN' ? 'selected' : ''}>Nyishi · Nyishi</option>
             </select>
           </div>
           <button class="l2v-btn primary save-btn" style="margin-top:14px" id="setSaveLang">Save Language</button>
@@ -1056,7 +1060,11 @@
 
     document.getElementById('setSaveLang').onclick = () => savePartial({
       preferred_language: gV('setPLang')
-    }, 'setSaveLang');
+    }, 'setSaveLang').then(() => {
+      const selected = gV('setPLang');
+      if (window.setLocale) window.setLocale(selected);
+      if (window.CCNERApplyLanguage) window.CCNERApplyLanguage();
+    });
 
     document.getElementById('setSavePrivacy').onclick = () => savePartial({
       privacy_preferences: {
