@@ -89,10 +89,42 @@
     window.dispatchEvent(new CustomEvent('ccner:language-change',{detail:{locale}}));
     return true;
   }
+  function closeLanguageSelector(){document.getElementById('ccnerLanguageModal')?.remove();}
+  function openLanguageSelector(){
+    closeLanguageSelector();
+    const modal=document.createElement('div');
+    modal.id='ccnerLanguageModal';
+    modal.className='ccner-language-modal';
+    modal.setAttribute('role','dialog');
+    modal.setAttribute('aria-modal','true');
+    modal.innerHTML='<div class="ccner-language-backdrop" data-lang-close></div><div class="ccner-language-dialog"><button type="button" class="ccner-language-close" data-lang-close aria-label="Close">×</button><p class="eyebrow">APP LANGUAGE</p><h2>'+esc(text().choose)+'</h2><p class="ccner-language-help">Choose the language for the Cognitive Care NER app. This changes the app interface; it does not change your phone\'s Android system language.</p><div class="ccner-language-choice-list">'+Object.entries(LANGS).map(([id,meta])=>'<label class="ccner-language-choice'+(id===locale?' selected':'')+'"><input type="radio" name="ccner-language-choice" value="'+esc(id)+'" '+(id===locale?'checked':'')+'><span><strong>'+esc(meta.native)+'</strong><small>'+esc(meta.name)+'</small></span></label>').join('')+'</div><p id="ccnerLanguageModalStatus" class="ccner-language-status" aria-live="polite"></p><div class="ccner-language-actions"><button type="button" class="action-button" data-lang-close>Cancel</button><button type="button" class="action-button primary" id="ccnerLanguageConfirm">Confirm language</button></div></div>';
+    document.body.appendChild(modal);
+    const refresh=()=>modal.querySelectorAll('.ccner-language-choice').forEach(label=>label.classList.toggle('selected',label.querySelector('input')?.checked));
+    modal.querySelectorAll('input[name="ccner-language-choice"]').forEach(input=>input.addEventListener('change',refresh));
+    modal.querySelectorAll('[data-lang-close]').forEach(el=>el.addEventListener('click',closeLanguageSelector));
+    modal.querySelector('#ccnerLanguageConfirm')?.addEventListener('click',()=>{
+      const selected=modal.querySelector('input[name="ccner-language-choice"]:checked')?.value||locale;
+      setLanguage(selected);
+      const status=modal.querySelector('#ccnerLanguageModalStatus');
+      if(status)status.textContent='✓ '+LANGS[selected].native+' selected and applied.';
+      setTimeout(closeLanguageSelector,450);
+    });
+    modal.querySelector('input[name="ccner-language-choice"]:checked')?.focus();
+  }
+  function installLanguageTrigger(){
+    if(window.__ccnerLanguageTriggerInstalled)return;
+    window.__ccnerLanguageTriggerInstalled=true;
+    document.addEventListener('click',e=>{
+      const target=e.target?.closest?.('[data-language-selector],[data-action="language"],[data-nav="language"],#appLanguageButton,#systemLanguageButton');
+      const textValue=String(e.target?.closest?.('button,a,[role="button"]')?.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();
+      const textTrigger=textValue.startsWith('app language / system language')||textValue==='language & voice';
+      if(target||textTrigger){e.preventDefault();e.stopPropagation();openLanguageSelector();}
+    },true);
+  }
   const observer=new MutationObserver(ms=>ms.forEach(m=>{if(m.type==='childList')m.addedNodes.forEach(n=>{if(n.nodeType===1)translateDom(n)});else if(m.type==='characterData'){if(!originals.has(m.target))originals.set(m.target,m.target.nodeValue);m.target.nodeValue=translateValue(originals.get(m.target))}}));
-  function boot(){if(!document.body)return;observer.observe(document.body,{subtree:true,childList:true,characterData:true});installLanguageCard();apply();setTimeout(()=>{translateDom(document);patchSpeech();patchRecognition()},300)}
+  function boot(){if(!document.body)return;observer.observe(document.body,{subtree:true,childList:true,characterData:true});installLanguageTrigger();installLanguageCard();apply();setTimeout(()=>{translateDom(document);patchSpeech();patchRecognition()},300)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  setInterval(()=>{installLanguageCard();highlight();patchSpeech();patchRecognition()},1000);
+  setInterval(()=>{installLanguageTrigger();installLanguageCard();highlight();patchSpeech();patchRecognition()},1000);
   window.setLocale = setLanguage;
   window.CCNERApplyLanguage = apply;
 })();
