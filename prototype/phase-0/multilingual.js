@@ -54,16 +54,45 @@
   function esc(s){return String(s).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}
   function translateValue(value){if(value==null)return value;const raw=String(value);if(locale==='en-IN')return raw;const d=G[locale]||EN;if(d[raw])return d[raw];for(const [re,out] of (PH[locale]||[]))if(re.test(raw))return raw.replace(re,out);let out=raw;Object.keys(d).sort((a,b)=>b.length-a.length).forEach(k=>{if(k&&out.includes(k))out=out.split(k).join(d[k])});return out}
   function translateDom(root=document){const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=walker.nextNode())){if(!n.parentElement||['SCRIPT','STYLE'].includes(n.parentElement.tagName))continue;if(!originals.has(n))originals.set(n,n.nodeValue);n.nodeValue=translateValue(originals.get(n));}root.querySelectorAll?.('[aria-label],[title],[placeholder]').forEach(el=>{let store=attrs.get(el);if(!store){store={};attrs.set(el,store)}['aria-label','title','placeholder'].forEach(a=>{if(el.hasAttribute(a)){if(store[a]===undefined)store[a]=el.getAttribute(a);el.setAttribute(a,translateValue(store[a]))}})})}
-  function updateVoiceLanguage(){window.CCNERLanguage={locale,language:LANGS[locale].name,nativeName:LANGS[locale].native,t:text,langs:LANGS,translate:translateValue};window.CCNERVoiceLocale=locale;try{const voices=window.speechSynthesis?.getVoices?.()||[];window.CCNERPreferredVoice=voices.find(v=>String(v.lang).toLowerCase().startsWith(locale.slice(0,2).toLowerCase()))||null}catch(_){}}
+  function updateVoiceLanguage(){window.CCNERLanguage={locale,language:LANGS[locale].name,nativeName:LANGS[locale].native,t:text,langs:LANGS,translate:translateValue,apply,translateDom};window.CCNERVoiceLocale=locale;try{const voices=window.speechSynthesis?.getVoices?.()||[];window.CCNERPreferredVoice=voices.find(v=>String(v.lang).toLowerCase().startsWith(locale.slice(0,2).toLowerCase()))||voices.find(v=>String(v.lang).toLowerCase().startsWith('en'))||null}catch(_){}}
   function patchSpeech(){if(typeof window.say==='function'&&!window.say.__ccnerLocalized){const base=window.say;const wrapped=function(message,mood='happy',label=mood,opts={}){return base(translateValue(message),mood,label,opts)};wrapped.__ccnerLocalized=true;window.say=wrapped}if(typeof window.speak==='function'&&!window.speak.__ccnerLocalized){const base=window.speak;const wrapped=function(message,...args){return base(translateValue(message),...args)};wrapped.__ccnerLocalized=true;window.speak=wrapped}}
   function patchRecognition(){const Base=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Base||Base.__ccnerWrapped)return;const Wrapped=function(){const r=new Base();try{Object.defineProperty(r,'lang',{configurable:true,get:()=>locale,set:()=>{}})}catch(_){try{r.lang=locale}catch(__){}}return r};Wrapped.prototype=Base.prototype;Wrapped.__ccnerWrapped=true;window.SpeechRecognition=Wrapped;window.webkitSpeechRecognition=Wrapped}
   function apply(){document.documentElement.lang=locale;const t=text();const map={pageTitle:t.title,voiceHint:t.ready,chatInput:t.placeholder,todayStatus:t.activity};Object.entries(map).forEach(([id,val])=>{const e=document.getElementById(id);if(e&&id==='chatInput')e.placeholder=val;else if(e)e.textContent=val});const subtitle=document.querySelector('.subtitle');if(subtitle)subtitle.textContent=t.subtitle;const buttons=[...document.querySelectorAll('.quick-actions button')];if(buttons[0])buttons[0].textContent=t.start;if(buttons[1])buttons[1].textContent=t.talk;if(buttons[2])buttons[2].textContent=t.reminders;if(buttons[3])buttons[3].textContent=t.progress;const vb=document.querySelector('.voice-banner');if(vb){const strong=vb.querySelector('strong'),p=vb.querySelector('p');if(strong)strong.textContent=t.hands;if(p)p.textContent=t.handsText}const send=document.getElementById('sendButton');if(send)send.textContent=t.send;const labels=document.querySelectorAll('.section-label .eyebrow');if(labels[0])labels[0].textContent=t.today;const routine=document.querySelector('.section-label h2');if(routine)routine.textContent=t.routine;const info=document.querySelectorAll('.info-grid article');if(info[0]?.querySelector('span'))info[0].querySelector('span').textContent=t.activity;if(info[1]?.querySelector('span'))info[1].querySelector('span').textContent=t.games;if(info[2]?.querySelector('span'))info[2].querySelector('span').textContent=t.focus;const strip=document.querySelector('.home-strip strong');if(strip)strip.textContent=t.noPressure;const safety=document.querySelector('.phase4-safety');if(safety)safety.textContent=t.safety;const resultEyebrow=document.querySelector('#resultsView .result-hero .eyebrow');if(resultEyebrow)resultEyebrow.textContent=t.session;const perf=document.querySelector('#resultsView .results-card .eyebrow');if(perf)perf.textContent=t.performance;const heading=document.querySelector('#resultsView .results-card h3');if(heading)heading.textContent=t.todaysGames;const again=document.getElementById('playAgain');if(again)again.textContent=t.playAgain;const home=document.getElementById('backHome');if(home)home.textContent=t.home;translateDom(document);updateVoiceLanguage();patchSpeech();patchRecognition()}
-  function installLanguageCard(){}
+  function installLanguageCard(){
+    const home=document.getElementById('homeView');
+    if(!home||document.getElementById('ccnerLanguageCard'))return;
+    const card=document.createElement('section');
+    card.id='ccnerLanguageCard';
+    card.className='language-card';
+    const current=locale;
+    const options=Object.entries(LANGS).map(([id,meta])=>
+      '<button class="language-option'+(id===current?' selected':'')+'" type="button" data-lang="'+esc(id)+'" aria-pressed="'+(id===current?'true':'false')+'">'+
+      '<span>'+esc(meta.native)+'</span><small>'+esc(meta.name)+'</small></button>'
+    ).join('');
+    card.innerHTML='<p class="eyebrow">LANGUAGE & VOICE</p><h3>'+esc(text().choose)+'</h3><div class="language-options">'+options+'</div><p id="languageSaved" class="language-saved" aria-live="polite"></p>';
+    const anchor=home.querySelector('.home-strip')||home.lastElementChild;
+    if(anchor)anchor.insertAdjacentElement('beforebegin',card);else home.appendChild(card);
+    card.querySelectorAll('[data-lang]').forEach(btn=>btn.addEventListener('click',()=>setLanguage(btn.dataset.lang)));
+  }
   function highlight(){document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('selected',b.dataset.lang===locale))}
-  function setLanguage(next){if(!LANGS[next])return;locale=next;localStorage.setItem(KEY,locale);apply();highlight();const saved=document.getElementById('languageSaved');if(saved)saved.textContent=`✓ ${text().saved} · ${LANGS[next].native}`;window.dispatchEvent(new CustomEvent('ccner:language-change',{detail:{locale}}))}
+  function setLanguage(next){
+    if(!LANGS[next])return false;
+    locale=next;
+    localStorage.setItem(KEY,locale);
+    localStorage.setItem('ccner-p1-language',locale);
+    try{const session=JSON.parse(localStorage.getItem('ccner-auth-session')||'null');if(session?.profile){session.profile.preferred_language=locale;localStorage.setItem('ccner-auth-session',JSON.stringify(session));}}catch(_){}
+    apply();
+    highlight();
+    installLanguageCard();
+    const saved=document.getElementById('languageSaved');
+    if(saved)saved.textContent=`✓ ${text().saved} · ${LANGS[next].native}`;
+    window.dispatchEvent(new CustomEvent('ccner:language-change',{detail:{locale}}));
+    return true;
+  }
   const observer=new MutationObserver(ms=>ms.forEach(m=>{if(m.type==='childList')m.addedNodes.forEach(n=>{if(n.nodeType===1)translateDom(n)});else if(m.type==='characterData'){if(!originals.has(m.target))originals.set(m.target,m.target.nodeValue);m.target.nodeValue=translateValue(originals.get(m.target))}}));
   function boot(){if(!document.body)return;observer.observe(document.body,{subtree:true,childList:true,characterData:true});installLanguageCard();apply();setTimeout(()=>{translateDom(document);patchSpeech();patchRecognition()},300)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  setInterval(()=>{installLanguageCard();patchSpeech();patchRecognition()},1000);
+  setInterval(()=>{installLanguageCard();highlight();patchSpeech();patchRecognition()},1000);
   window.setLocale = setLanguage;
+  window.CCNERApplyLanguage = apply;
 })();
